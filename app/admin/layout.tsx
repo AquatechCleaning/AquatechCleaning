@@ -1,46 +1,127 @@
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
 
+const navItems = [
+  { section: "Overview", links: [
+    { href: "/admin/dashboard", label: "Dashboard", icon: "▣" },
+    { href: "/admin/analytics", label: "Analytics", icon: "📈" },
+  ]},
+  { section: "Operations", links: [
+    { href: "/admin/quotes", label: "Quotes", icon: "📋" },
+    { href: "/admin/jobs", label: "Jobs", icon: "🔧" },
+    { href: "/admin/reminders", label: "Reminders", icon: "⏰" },
+  ]},
+  { section: "Content", links: [
+    { href: "/admin/media", label: "Media", icon: "🖼" },
+    { href: "/admin/testimonials", label: "Testimonials", icon: "💬" },
+    { href: "/admin/pricing", label: "Pricing", icon: "💰" },
+    { href: "/admin/settings", label: "Settings", icon: "⚙️" },
+  ]},
+];
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      <header className="sticky top-0 z-40 border-b border-[#d2d5c6] bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <Link href="/admin/dashboard" className="shrink-0 text-lg font-semibold text-[#02203D]">
-            {siteConfig.companyName} Admin
+    <div className="admin-shell">
+      <aside className="admin-sidebar">
+        {/* Logo */}
+        <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "8px" }}>
+          <Link
+            href="/admin/dashboard"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontFamily: "var(--font-display)",
+              fontSize: "14px",
+              fontWeight: 800,
+              color: "#fff",
+              textDecoration: "none",
+            }}
+          >
+            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
+            {siteConfig.companyName}
+            <span
+              style={{
+                marginLeft: "auto",
+                fontSize: "9px",
+                background: "var(--accent)",
+                color: "var(--navy)",
+                padding: "2px 7px",
+                borderRadius: "100px",
+                fontWeight: 700,
+                letterSpacing: "0.05em",
+              }}
+            >
+              ADMIN
+            </span>
           </Link>
-          <nav className="flex min-w-0 flex-nowrap gap-2 overflow-x-auto text-sm">
-            <Link href="/admin/dashboard" className="whitespace-nowrap rounded-full px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-              Dashboard
-            </Link>
-            <Link href="/admin/quotes" className="whitespace-nowrap rounded-full px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-              Quotes
-            </Link>
-            <Link href="/admin/jobs" className="whitespace-nowrap rounded-full px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-              Jobs
-            </Link>
-            <Link href="/admin/media" className="whitespace-nowrap rounded-full px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-              Media
-            </Link>
-            <Link href="/admin/testimonials" className="whitespace-nowrap rounded-full px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-              Testimonials
-            </Link>
-            <Link href="/admin/pricing" className="whitespace-nowrap rounded-full px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-              Pricing
-            </Link>
-            <Link href="/admin/settings" className="whitespace-nowrap rounded-full px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-              Settings
-            </Link>
-            <Link href="/admin/analytics" className="whitespace-nowrap rounded-full px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-              Analytics
-            </Link>
-            <Link href="/admin/reminders" className="whitespace-nowrap rounded-full px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-              Reminders
-            </Link>
-          </nav>
         </div>
-      </header>
-      <main className="mx-auto max-w-6xl px-4 py-10">{children}</main>
+
+        {/* Nav */}
+        <nav style={{ padding: "4px 12px", flex: 1 }}>
+          {navItems.map((section) => (
+            <div key={section.section} style={{ marginBottom: "8px" }}>
+              <p
+                style={{
+                  fontSize: "9px",
+                  fontWeight: 700,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.28)",
+                  padding: "8px 10px 4px",
+                }}
+              >
+                {section.section}
+              </p>
+              {section.links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "8px 12px",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "rgba(255,255,255,0.6)",
+                    textDecoration: "none",
+                    marginBottom: "2px",
+                  }}
+                  className="admin-nav-link"
+                >
+                  <span style={{ fontSize: "13px", width: "16px", textAlign: "center" }}>{link.icon}</span>
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          ))}
+        </nav>
+
+        {/* Footer */}
+        <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+          <Link
+            href="/"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontSize: "12px",
+              color: "rgba(255,255,255,0.4)",
+              textDecoration: "none",
+            }}
+          >
+            ← View site
+          </Link>
+        </div>
+      </aside>
+
+      <main className="admin-main">{children}</main>
+
+      <style>{`
+        .admin-nav-link:hover { background: rgba(255,255,255,0.07) !important; color: rgba(255,255,255,0.9) !important; }
+      `}</style>
     </div>
   );
 }

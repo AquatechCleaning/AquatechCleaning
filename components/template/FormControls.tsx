@@ -1,12 +1,30 @@
 export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={`appoint-input ${props.className ?? ""}`.trim()} />;
+  const { className = "", ...rest } = props;
+  return (
+    <input
+      {...rest}
+      className={`ui-input ${className}`.trim()}
+    />
+  );
 }
 
 export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...props} className={`appoint-input ${props.className ?? ""}`.trim()} />;
+  const { className = "", ...rest } = props;
+  return (
+    <textarea
+      {...rest}
+      className={`ui-input ${className}`.trim()}
+      style={{ resize: "vertical", ...props.style }}
+    />
+  );
 }
 
 export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select {...props} className={`appoint-input ${props.className ?? ""}`.trim()} />;
+  const { className = "", ...rest } = props;
+  return (
+    <select
+      {...rest}
+      className={`ui-input ${className}`.trim()}
+    />
+  );
 }
-

@@ -5,10 +5,9 @@ import { useState } from "react";
 export function MissionBeforeAfter() {
   const [yPercent, setYPercent] = useState(50);
 
-  const updateFromEvent = (clientY: number, rect: DOMRect) => {
+  const update = (clientY: number, rect: DOMRect) => {
     const y = ((clientY - rect.top) / rect.height) * 100;
-    const clamped = Math.max(0, Math.min(100, y));
-    setYPercent(clamped);
+    setYPercent(Math.max(0, Math.min(100, y)));
   };
 
   return (
@@ -17,30 +16,18 @@ export function MissionBeforeAfter() {
         position: "relative",
         width: "100%",
         height: "100%",
-        borderRadius: "20px",
-        border: "3.75px solid #000000",
+        borderRadius: "14px",
         overflow: "hidden",
-        cursor: "pointer",
+        cursor: "ns-resize",
+        userSelect: "none",
       }}
-      onMouseMove={(e) => updateFromEvent(e.clientY, e.currentTarget.getBoundingClientRect())}
+      onMouseMove={(e) => update(e.clientY, e.currentTarget.getBoundingClientRect())}
       onTouchMove={(e) => {
-        const touch = e.touches[0];
-        if (!touch) return;
-        updateFromEvent(touch.clientY, e.currentTarget.getBoundingClientRect());
+        const t = e.touches[0];
+        if (t) update(t.clientY, e.currentTarget.getBoundingClientRect());
       }}
     >
-      <img
-        src="/After.jpeg"
-        alt="After cleaning"
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-        }}
-      />
-
+      <img src="/After.jpeg" alt="After cleaning" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
       <img
         src="/Before.jpeg"
         alt="Before cleaning"
@@ -53,20 +40,26 @@ export function MissionBeforeAfter() {
           clipPath: `inset(0 0 ${100 - yPercent}% 0)`,
         }}
       />
-
+      {/* Divider line */}
       <div
-        aria-hidden
         style={{
           position: "absolute",
           left: 0,
           right: 0,
           top: `${yPercent}%`,
           height: "2px",
-          background: "#f0a935",
-          boxShadow: "0 0 0 1px rgba(2,32,61,0.35)",
+          background: "var(--accent)",
+          boxShadow: "0 0 0 1px rgba(2,32,61,0.25)",
           pointerEvents: "none",
         }}
       />
+      {/* Labels */}
+      <div style={{ position: "absolute", top: "10px", left: "10px", background: "rgba(0,0,0,0.55)", color: "#fff", fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "3px 8px", borderRadius: "100px" }}>
+        Before
+      </div>
+      <div style={{ position: "absolute", bottom: "10px", right: "10px", background: "var(--accent)", color: "var(--navy)", fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "3px 8px", borderRadius: "100px" }}>
+        After
+      </div>
     </div>
   );
 }

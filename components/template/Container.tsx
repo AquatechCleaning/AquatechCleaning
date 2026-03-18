@@ -5,6 +5,7 @@ export function Container({
   children: React.ReactNode;
   className?: string;
 }) {
-  return <div className={`container ${className}`.trim()}>{children}</div>;
+  return (
+    <div className={`ui-container ${className}`.trim()}>{children}</div>
+  );
 }
-

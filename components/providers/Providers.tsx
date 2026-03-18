@@ -1,12 +1,7 @@
-/* eslint-disable react-hooks/rules-of-hooks */
 "use client";
 
 import { SessionProvider } from "next-auth/react";
 
-type Props = {
-  children: React.ReactNode;
-};
-
-export function Providers({ children }: Props) {
+export function Providers({ children }: { children: React.ReactNode }) {
   return <SessionProvider>{children}</SessionProvider>;
 }

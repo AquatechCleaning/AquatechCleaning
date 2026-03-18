@@ -12,6 +12,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const parsed = quoteSchema.parse(body);
+    const coordinates = parsed.coordinates ?? undefined;
 
     await dbConnect();
 
@@ -52,18 +53,18 @@ export async function POST(request: Request) {
         customerId: customer._id,
         address: parsed.address,
         suburb: parsed.address,
-        coordinates: parsed.coordinates,
+        coordinates,
         propertyType: parsed.propertyType,
       });
     } else {
       const shouldUpdatePropertyType = property.propertyType !== parsed.propertyType;
-      const shouldUpdateCoordinates = !property.coordinates && parsed.coordinates;
+      const shouldUpdateCoordinates = !property.coordinates && coordinates;
       if (shouldUpdatePropertyType || shouldUpdateCoordinates) {
         if (shouldUpdatePropertyType) {
           property.propertyType = parsed.propertyType;
         }
         if (shouldUpdateCoordinates) {
-          property.coordinates = parsed.coordinates;
+          property.coordinates = coordinates;
         }
         await property.save();
       }
@@ -82,6 +83,9 @@ export async function POST(request: Request) {
       { $inc: { nextNumber: 1 } },
       { new: true }
     );
+    if (!sequence) {
+      throw new Error("Unable to generate quote number");
+    }
     const quoteNumberValue = sequence.nextNumber;
     const quoteNumber = `QU${quoteNumberValue.toString().padStart(4, "0")}`;
     const dueDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
@@ -95,7 +99,7 @@ export async function POST(request: Request) {
       totalAmount: pricing.total,
       currency: "ZAR",
       leadSource: "Website Self-Quote",
-      geo: parsed.coordinates,
+      geo: coordinates,
       quoteNumber,
       reference: quoteNumber,
       dueDate,

@@ -1,31 +1,69 @@
-import Link from "next/link";
 import { siteConfig } from "@/config/site";
 
 export function TopBar() {
   return (
-    <div className="border-b border-[#d2d5c6] bg-[#02203D] text-[#fbf8e5]">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-2 text-xs sm:text-sm">
-        <p>{siteConfig.hoursText}</p>
-        <div className="flex items-center gap-3 sm:gap-4">
-          <Link
-            href={siteConfig.cta.quote}
-            className="rounded-full bg-[#f0a935] px-3 py-1 font-semibold text-[#02203D] transition hover:bg-[#dd982d]"
+    <div
+      style={{
+        background: "var(--navy)",
+        padding: "7px 0",
+        fontSize: "12px",
+        color: "rgba(255,255,255,0.6)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+      }}
+    >
+      <div
+        className="ui-container"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "8px",
+        }}
+      >
+        <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+          <a
+            href={siteConfig.phoneHref}
+            style={{
+              color: "var(--accent)",
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
           >
-            REQUEST A QUOTE
-          </Link>
-          <Link href={siteConfig.phoneHref} className="font-medium hover:text-white">
-            {siteConfig.phoneDisplay}
-          </Link>
-          <div className="flex items-center gap-2">
-            {siteConfig.socials.map((social) => (
-              <Link
-                key={social.name}
-                href={social.href}
-                className="grid h-6 w-6 place-items-center rounded-full border border-[#d2d5c6] text-[11px] font-semibold hover:bg-[#055178]"
-                aria-label={social.name}
+            📞 {siteConfig.phoneDisplay}
+          </a>
+          <span style={{ color: "rgba(255,255,255,0.25)" }}>|</span>
+          <a
+            href="mailto:hello@aquatechcleaning.co.za"
+            style={{ color: "rgba(255,255,255,0.65)", textDecoration: "none" }}
+          >
+            ✉ hello@aquatechcleaning.co.za
+          </a>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <span>⏰ {siteConfig.hoursText}</span>
+          <div style={{ display: "flex", gap: "8px" }}>
+            {siteConfig.socials.map((s) => (
+              <a
+                key={s.name}
+                href={s.href}
+                aria-label={s.name}
+                style={{
+                  width: "22px",
+                  height: "22px",
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,0.1)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "rgba(255,255,255,0.65)",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  textDecoration: "none",
+                }}
               >
-                {social.shortLabel}
-              </Link>
+                {s.shortLabel}
+              </a>
             ))}
           </div>
         </div>

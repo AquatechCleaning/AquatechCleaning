@@ -11,7 +11,7 @@ import { SiteSettings } from "@/lib/models/SiteSettings";
 export const runtime = "nodejs";
 
 type Params = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 export async function GET(req: Request, { params }: Params) {
@@ -24,7 +24,8 @@ export async function GET(req: Request, { params }: Params) {
     const pdfIndex = pathSegments.indexOf("pdf");
     const pathId =
       pdfIndex >= 0 && pathSegments[pdfIndex + 1] ? pathSegments[pdfIndex + 1] : pathSegments[pathSegments.length - 1];
-    const rawId = params?.id ?? pathId;
+    const resolvedParams = await params;
+    const rawId = resolvedParams?.id ?? pathId;
     const id = typeof rawId === "string" ? decodeURIComponent(rawId).trim() : "";
     if (!id || id === "undefined") {
       return NextResponse.json({ error: "Quote ID is required" }, { status: 400 });
@@ -51,14 +52,7 @@ export async function GET(req: Request, { params }: Params) {
     const isValidObjectId = mongoose.Types.ObjectId.isValid(id);
     let quote = isValidObjectId ? await Quote.findById(id) : null;
     if (!quote) {
-      const objectId = isValidObjectId ? new mongoose.Types.ObjectId(id) : null;
-      const rawQuote = await Quote.collection.findOne(
-        objectId ? { $or: [{ _id: objectId }, { _id: id }] } : { _id: id }
-      );
-      if (!rawQuote) {
-        return NextResponse.json({ error: "Quote not found", details: id }, { status: 404 });
-      }
-      quote = rawQuote as any;
+      return NextResponse.json({ error: "Quote not found", details: id }, { status: 404 });
     }
 
     const customer = await Customer.findById(quote.customerId);
@@ -106,7 +100,7 @@ export async function GET(req: Request, { params }: Params) {
       },
     });
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

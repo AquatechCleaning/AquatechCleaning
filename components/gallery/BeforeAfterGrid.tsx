@@ -1,124 +1,176 @@
-"use client";
-
-import { useMemo, useState } from "react";
-
-type GalleryPair = {
-  id: string;
-  beforeSrc: string;
-  afterSrc: string;
-  altBefore: string;
-  altAfter: string;
+type MediaItem = {
+  _id: string;
+  title: string;
+  locationLabel?: string;
+  serviceType?: string;
+  imageBeforeUrl: string;
+  imageAfterUrl: string;
 };
 
-const galleryPairs: GalleryPair[] = [
-  {
-    id: "driveway-1",
-    beforeSrc: "https://picsum.photos/seed/aquatech-before-1/900/620",
-    afterSrc: "https://picsum.photos/seed/aquatech-after-1/900/620",
-    altBefore: "Driveway before pressure cleaning",
-    altAfter: "Driveway after pressure cleaning",
-  },
-  {
-    id: "roof-1",
-    beforeSrc: "https://picsum.photos/seed/aquatech-before-2/900/620",
-    afterSrc: "https://picsum.photos/seed/aquatech-after-2/900/620",
-    altBefore: "Roof before wash",
-    altAfter: "Roof after wash",
-  },
-  {
-    id: "paving-1",
-    beforeSrc: "https://picsum.photos/seed/aquatech-before-3/900/620",
-    afterSrc: "https://picsum.photos/seed/aquatech-after-3/900/620",
-    altBefore: "Paving before cleaning",
-    altAfter: "Paving after cleaning",
-  },
-  {
-    id: "walls-1",
-    beforeSrc: "https://picsum.photos/seed/aquatech-before-4/900/620",
-    afterSrc: "https://picsum.photos/seed/aquatech-after-4/900/620",
-    altBefore: "Exterior wall before soft wash",
-    altAfter: "Exterior wall after soft wash",
-  },
-  {
-    id: "deck-1",
-    beforeSrc: "https://picsum.photos/seed/aquatech-before-5/900/620",
-    afterSrc: "https://picsum.photos/seed/aquatech-after-5/900/620",
-    altBefore: "Deck before restoration",
-    altAfter: "Deck after restoration",
-  },
-  {
-    id: "commercial-1",
-    beforeSrc: "https://picsum.photos/seed/aquatech-before-6/900/620",
-    afterSrc: "https://picsum.photos/seed/aquatech-after-6/900/620",
-    altBefore: "Commercial surface before cleaning",
-    altAfter: "Commercial surface after cleaning",
-  },
-];
+async function getMedia(): Promise<MediaItem[]> {
+  const base =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000";
+  try {
+    const res = await fetch(new URL("/api/media", base).toString(), {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
 
-type LightboxState = { src: string; alt: string } | null;
+export async function BeforeAfterGrid() {
+  const media = await getMedia();
 
-export function BeforeAfterGrid() {
-  const [lightbox, setLightbox] = useState<LightboxState>(null);
-  const pairs = useMemo(() => galleryPairs, []);
+  if (media.length === 0) {
+    return (
+      <div className="ui-container" style={{ padding: "60px 24px" }}>
+        <div
+          className="ui-card"
+          style={{ padding: "60px", textAlign: "center" }}
+        >
+          <p style={{ fontSize: "40px", marginBottom: "16px" }}>📸</p>
+          <p
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "17px",
+              fontWeight: 700,
+              color: "var(--navy)",
+              marginBottom: "8px",
+            }}
+          >
+            Gallery coming soon
+          </p>
+          <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+            Upload before/after media in the admin panel to populate this gallery.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
-      <div className="mb-8 flex items-end justify-between gap-4 border-b border-[#d2d5c6] pb-4">
-        <div>
-          <h2 className="text-2xl font-bold text-[#02203D] sm:text-3xl">Before and After Results</h2>
-          <p className="mt-2 text-sm text-slate-700">Tap any image to view it larger.</p>
-        </div>
-      </div>
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {pairs.map((pair) => (
-          <article
-            key={pair.id}
-            className="rounded-2xl border border-[#d2d5c6] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+    <div className="ui-container" style={{ padding: "60px 24px" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: "20px",
+        }}
+      >
+        {media.map((item, i) => (
+          <div
+            key={item._id}
+            className={`ui-card ui-card-hover reveal-up reveal-up-d${Math.min(i + 1, 4)}`}
+            style={{ overflow: "hidden" }}
           >
-            <div className="grid gap-3 sm:grid-cols-2">
-              <button className="text-left" onClick={() => setLightbox({ src: pair.beforeSrc, alt: pair.altBefore })}>
-                <span className="mb-2 inline-block rounded-full border border-[#d2d5c6] bg-[#fbf8e5] px-3 py-1 text-xs font-semibold text-[#02203D]">
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                position: "relative",
+              }}
+            >
+              <div style={{ position: "relative" }}>
+                <img
+                  src={item.imageBeforeUrl}
+                  alt="Before"
+                  style={{ height: "200px", width: "100%", objectFit: "cover" }}
+                />
+                <span
+                  style={{
+                    position: "absolute",
+                    bottom: "8px",
+                    left: "8px",
+                    background: "rgba(0,0,0,0.6)",
+                    color: "#fff",
+                    fontSize: "9px",
+                    fontWeight: 700,
+                    padding: "3px 8px",
+                    borderRadius: "100px",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                  }}
+                >
                   Before
                 </span>
+              </div>
+              <div style={{ position: "relative" }}>
                 <img
-                  src={pair.beforeSrc}
-                  alt={pair.altBefore}
-                  className="h-44 w-full rounded-lg border border-[#d2d5c6] object-cover"
+                  src={item.imageAfterUrl}
+                  alt="After"
+                  style={{ height: "200px", width: "100%", objectFit: "cover" }}
                 />
-              </button>
-              <button className="text-left" onClick={() => setLightbox({ src: pair.afterSrc, alt: pair.altAfter })}>
-                <span className="mb-2 inline-block rounded-full border border-[#d2d5c6] bg-[#fbf8e5] px-3 py-1 text-xs font-semibold text-[#02203D]">
+                <span
+                  style={{
+                    position: "absolute",
+                    bottom: "8px",
+                    right: "8px",
+                    background: "var(--accent)",
+                    color: "var(--navy)",
+                    fontSize: "9px",
+                    fontWeight: 700,
+                    padding: "3px 8px",
+                    borderRadius: "100px",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                  }}
+                >
                   After
                 </span>
-                <img
-                  src={pair.afterSrc}
-                  alt={pair.altAfter}
-                  className="h-44 w-full rounded-lg border border-[#d2d5c6] object-cover"
-                />
-              </button>
+              </div>
             </div>
-          </article>
-        ))}
-      </div>
-
-      {lightbox && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#02203D]/80 p-4"
-          onClick={() => setLightbox(null)}
-        >
-          <div className="w-full max-w-4xl rounded-2xl border border-[#d2d5c6] bg-white p-3 shadow-xl">
-            <img src={lightbox.src} alt={lightbox.alt} className="max-h-[75vh] w-full rounded-xl object-contain" />
-            <div className="mt-2 flex justify-end">
-              <button
-                className="rounded-full bg-[#f0a935] px-4 py-2 text-sm font-semibold text-[#02203D] hover:bg-[#dd982d]"
-                onClick={() => setLightbox(null)}
+            <div style={{ padding: "14px 18px" }}>
+              <p
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  color: "var(--navy)",
+                  marginBottom: "6px",
+                }}
               >
-                Close
-              </button>
+                {item.title}
+              </p>
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                {item.serviceType && (
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      background: "#EFF6FF",
+                      color: "var(--primary)",
+                      padding: "2px 8px",
+                      borderRadius: "100px",
+                      fontWeight: 600,
+                      textTransform: "capitalize",
+                    }}
+                  >
+                    {item.serviceType.replace("_", " ")}
+                  </span>
+                )}
+                {item.locationLabel && (
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      background: "var(--surface-2)",
+                      color: "var(--text-muted)",
+                      padding: "2px 8px",
+                      borderRadius: "100px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    📍 {item.locationLabel}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </section>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -7,10 +7,9 @@ export function Badge({
 }) {
   return (
     <span
-      className={`inline-flex rounded-full border border-[#d2d5c6] bg-[#fbf8e5] px-3 py-1 text-xs font-semibold text-[#055178] ${className}`.trim()}
+      className={`ui-badge ui-badge-sent ${className}`.trim()}
     >
       {children}
     </span>
   );
 }
-

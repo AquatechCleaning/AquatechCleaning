@@ -1,19 +1,72 @@
-﻿export function MiniMap() {
+import Link from "next/link";
+
+export function MiniMap() {
   return (
-    <section className="mx-auto mt-16 max-w-6xl px-4 reveal-up">
-      <div className="rounded-3xl border border-[#d2d5c6] bg-white p-6 shadow-[0_12px_28px_rgba(2,32,61,0.1)]">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div>
-            <h3 className="text-2xl font-semibold text-[#02203D]">Serving Cape Town and surrounds</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Northern and Southern suburbs, Atlantic Seaboard, Stellenbosch, Paarl, and the Winelands.
-              If you are outside these areas, reach out - we frequently travel for larger commercial
-              work.
+    <section style={{ padding: "80px 0", background: "var(--navy)" }}>
+      <div className="ui-container">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "48px",
+            alignItems: "center",
+          }}
+        >
+          <div className="reveal-up">
+            <p className="ui-kicker" style={{ color: "var(--accent)" }}>
+              Service Area
             </p>
+            <h2
+              className="ui-title"
+              style={{ color: "#fff", marginTop: "8px", marginBottom: "16px" }}
+            >
+              Serving Cape Town and surrounds
+            </h2>
+            <p
+              style={{
+                color: "rgba(255,255,255,0.65)",
+                fontSize: "15px",
+                lineHeight: 1.8,
+                marginBottom: "28px",
+              }}
+            >
+              Northern and Southern suburbs, Atlantic Seaboard, Stellenbosch,
+              Paarl, and the Winelands. We frequently travel for larger
+              commercial work outside these areas.
+            </p>
+            <div style={{ display: "flex", gap: "12px" }}>
+              <Link href="/contact" className="ui-btn ui-btn-primary">
+                Contact Us
+              </Link>
+              <Link href="/quote" className="ui-btn ui-btn-outline-light">
+                Get a Quote
+              </Link>
+            </div>
           </div>
-          <div className="float-soft h-56 rounded-2xl border border-[#d2d5c6] bg-gradient-to-br from-[#055178]/15 via-white to-[#f0a935]/25 p-3">
-            <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-[#055178]/40 bg-white/70 text-sm text-slate-600">
-              Map placeholder - connect Google Maps embed if desired.
+
+          <div
+            className="reveal-up reveal-up-d2 float-soft"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "20px",
+              padding: "24px",
+              aspectRatio: "4/3",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "rgba(255,255,255,0.35)",
+              fontSize: "13px",
+              textAlign: "center",
+              lineHeight: 1.6,
+            }}
+          >
+            <div>
+              <p style={{ fontSize: "32px", marginBottom: "12px" }}>🗺️</p>
+              <p>Google Maps embed</p>
+              <p style={{ fontSize: "11px", marginTop: "6px", color: "rgba(255,255,255,0.25)" }}>
+                Add a Maps embed via your Google Maps API key
+              </p>
             </div>
           </div>
         </div>

@@ -1,11 +1,11 @@
 import Link from "next/link";
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type Variant = "primary" | "secondary" | "ghost";
 
-const classes: Record<ButtonVariant, string> = {
-  primary: "btn-1",
-  secondary: "btn-2",
-  ghost: "common-btn",
+const variantClass: Record<Variant, string> = {
+  primary:   "ui-btn ui-btn-primary",
+  secondary: "ui-btn ui-btn-secondary",
+  ghost:     "ui-btn ui-btn-ghost",
 };
 
 export function Button({
@@ -15,28 +15,25 @@ export function Button({
   className = "",
   type = "button",
   onClick,
+  disabled,
 }: {
   children: React.ReactNode;
   href?: string;
-  variant?: ButtonVariant;
+  variant?: Variant;
   className?: string;
   type?: "button" | "submit" | "reset";
   onClick?: () => void;
+  disabled?: boolean;
 }) {
-  const classValue = `${classes[variant]} ${className}`.trim();
+  const cls = `${variantClass[variant]} ${className}`.trim();
 
   if (href) {
-    return (
-      <Link href={href} className={classValue}>
-        {children}
-      </Link>
-    );
+    return <Link href={href} className={cls}>{children}</Link>;
   }
 
   return (
-    <button type={type} className={classValue} onClick={onClick}>
+    <button type={type} className={cls} onClick={onClick} disabled={disabled}>
       {children}
     </button>
   );
 }
-

@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Testimonial } from "@/lib/models/Testimonial";
 
-type Params = { params: { id: string } };
+type RouteContext = { params: Promise<{ id: string }> };
 
-export async function PUT(request: Request, { params }: Params) {
+export async function PUT(request: Request, { params }: RouteContext) {
   try {
     await dbConnect();
     const data = await request.json();
-    const updated = await Testimonial.findByIdAndUpdate(params.id, data, { new: true });
+    const { id } = await params;
+    const updated = await Testimonial.findByIdAndUpdate(id, data, { new: true });
     return NextResponse.json(updated);
   } catch (error) {
     console.error(error);
@@ -16,10 +17,11 @@ export async function PUT(request: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(_req: Request, { params }: Params) {
+export async function DELETE(_req: Request, { params }: RouteContext) {
   try {
     await dbConnect();
-    await Testimonial.findByIdAndDelete(params.id);
+    const { id } = await params;
+    await Testimonial.findByIdAndDelete(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error(error);

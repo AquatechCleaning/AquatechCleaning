@@ -5,6 +5,7 @@ export function Card({
   children: React.ReactNode;
   className?: string;
 }) {
-  return <div className={`appointment-container ${className}`.trim()}>{children}</div>;
+  return (
+    <div className={`ui-card ${className}`.trim()}>{children}</div>
+  );
 }
-

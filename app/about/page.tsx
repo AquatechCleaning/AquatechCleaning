@@ -1,46 +1,94 @@
-
-import { Container } from "@/components/template/Container";
-import { PageHeader } from "@/components/template/PageHeader";
-import { Card } from "@/components/template/Card";
+import Link from "next/link";
 
 const highlights = [
-  "10+ years of exterior cleaning across the Western Cape.",
-  "Fully insured crews with safety gear for heights and confined spaces.",
-  "Modern equipment: rotary surface cleaners, soft-wash rigs, and water capture.",
-  "Detailed reporting, photos, and recommendations after every job.",
+  { icon: "🏆", title: "10+ Years Experience", body: "A decade of exterior cleaning across the Western Cape — we've seen every surface type." },
+  { icon: "🛡️", title: "Fully Insured", body: "Our crews carry full public liability insurance and height-work safety gear on every job." },
+  { icon: "⚙️", title: "Modern Equipment", body: "Rotary surface cleaners, soft-wash rigs, and water-capture systems for sensitive sites." },
+  { icon: "📸", title: "Detailed Reporting", body: "After every job you receive photos, recommendations, and a post-clean inspection report." },
 ];
 
 export default function AboutPage() {
   return (
-    <div className="ui-shell">
-      <Container className="ui-page space-y-10">
-        <PageHeader
-          title="Aqua-tech precision with hands-on service."
-          subtitle="Aquatech Cleaning is a Cape Town crew focused on quality, safety, and respect for your property."
-          breadcrumb={[{ label: "Home", href: "/" }, { label: "About" }]}
-        />
-        <Card className="ui-card p-6">
-          <h2 className="text-xl font-semibold text-[#02203D]">Why clients stay with us</h2>
-          <ul className="mt-4 grid gap-3 md:grid-cols-2">
-            {highlights.map((item) => (
-              <li key={item} className="flex items-start gap-3 text-sm text-slate-700">
-                <span className="mt-1 h-2 w-2 rounded-full bg-[#f0a935]" />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </Card>
-        <Card className="ui-card p-6">
-          <h2 className="text-xl font-semibold text-[#02203D]">Our story</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            We started with roof cleaning and gutter work, then expanded into paving, walls, and commercial
-            exteriors as clients asked for a single trusted provider. Every project includes a safety plan,
-            gear suited to the surface, and respectful crews who leave your space clean.
+    <div style={{ background: "var(--bg)" }}>
+      {/* Hero */}
+      <div style={{ background: "var(--navy)", padding: "64px 0 80px", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "48px 48px", pointerEvents: "none" }} />
+        <div className="ui-container" style={{ position: "relative" }}>
+          <p className="ui-kicker reveal-up" style={{ color: "var(--accent)" }}>Our Story</p>
+          <h1 className="ui-title reveal-up reveal-up-d1" style={{ color: "#fff", marginTop: "8px", marginBottom: "12px" }}>
+            Aqua-tech precision with hands-on service.
+          </h1>
+          <p className="ui-subtitle reveal-up reveal-up-d2" style={{ color: "rgba(255,255,255,0.65)", maxWidth: "520px" }}>
+            Aquatech Cleaning is a Cape Town crew focused on quality, safety, and respect for your property.
           </p>
-        </Card>
-      </Container>
+        </div>
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "40px", background: "var(--bg)", clipPath: "ellipse(60% 100% at 50% 100%)" }} />
+      </div>
+
+      <div className="ui-container" style={{ padding: "60px 24px" }}>
+        {/* Story */}
+        <div className="ui-card reveal-up" style={{ padding: "40px", marginBottom: "24px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", alignItems: "center" }}>
+            <div>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: "22px", fontWeight: 800, color: "var(--navy)", marginBottom: "16px" }}>
+                How we started
+              </h2>
+              <p style={{ fontSize: "15px", color: "#334155", lineHeight: 1.8, marginBottom: "16px" }}>
+                We started with roof cleaning and gutter work, then expanded into paving, walls, and commercial
+                exteriors as clients asked for a single trusted provider.
+              </p>
+              <p style={{ fontSize: "15px", color: "#334155", lineHeight: 1.8 }}>
+                Every project includes a safety plan, gear suited to the surface, and respectful crews who leave
+                your space clean and your mind at ease.
+              </p>
+            </div>
+            <div
+              style={{
+                background: "linear-gradient(135deg, #EFF6FF 0%, #FEF9C3 100%)",
+                borderRadius: "16px",
+                padding: "32px",
+                textAlign: "center",
+                border: "1px solid var(--border)",
+              }}
+            >
+              <div style={{ fontFamily: "var(--font-display)", fontSize: "48px", fontWeight: 800, color: "var(--navy)" }}>10+</div>
+              <div style={{ fontSize: "13px", color: "var(--text-muted)", fontWeight: 600 }}>Years serving Cape Town</div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: "36px", fontWeight: 800, color: "var(--primary)", marginTop: "16px" }}>850+</div>
+              <div style={{ fontSize: "13px", color: "var(--text-muted)", fontWeight: 600 }}>Satisfied clients</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Highlights */}
+        <h2 style={{ fontFamily: "var(--font-display)", fontSize: "20px", fontWeight: 800, color: "var(--navy)", marginBottom: "20px" }} className="reveal-up">
+          Why clients stay with us
+        </h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px", marginBottom: "40px" }}>
+          {highlights.map((h, i) => (
+            <div
+              key={h.title}
+              className={`ui-card reveal-up reveal-up-d${i + 1}`}
+              style={{ padding: "24px" }}
+            >
+              <div style={{ fontSize: "28px", marginBottom: "12px" }}>{h.icon}</div>
+              <h3 style={{ fontFamily: "var(--font-display)", fontSize: "15px", fontWeight: 700, color: "var(--navy)", marginBottom: "8px" }}>{h.title}</h3>
+              <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.7 }}>{h.body}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div className="ui-card reveal-up" style={{ padding: "32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "20px", border: "2px solid var(--accent)" }}>
+          <div>
+            <h3 style={{ fontFamily: "var(--font-display)", fontSize: "18px", fontWeight: 800, color: "var(--navy)", marginBottom: "6px" }}>Ready to work with us?</h3>
+            <p style={{ fontSize: "14px", color: "var(--text-muted)" }}>Get an instant quote or reach out to our team directly.</p>
+          </div>
+          <div style={{ display: "flex", gap: "12px" }}>
+            <Link href="/quote" className="ui-btn ui-btn-primary">Get a Quote</Link>
+            <Link href="/contact" className="ui-btn ui-btn-ghost">Contact Us</Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-
-

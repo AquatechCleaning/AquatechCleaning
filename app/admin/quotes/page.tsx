@@ -1,56 +1,195 @@
-﻿async function getQuotes() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/admin/quotes`, {
-    cache: "no-store",
-  });
+import Link from "next/link";
+
+async function getQuotes() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/admin/quotes`, { cache: "no-store" });
   if (!res.ok) return [];
   return res.json();
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    Pending: "ui-badge-pending",
+    Sent: "ui-badge-sent",
+    Accepted: "ui-badge-accepted",
+    Declined: "ui-badge-declined",
+    Expired: "ui-badge-expired",
+  };
+  return (
+    <span className={`ui-badge ${map[status] ?? "ui-badge-expired"}`}>
+      <span className="ui-status-dot" />
+      {status}
+    </span>
+  );
+}
+
+function initials(id: string) {
+  return id.slice(-2).toUpperCase();
 }
 
 export default async function QuotesPage() {
   const quotes = await getQuotes();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Quotes</h1>
-        <p className="text-sm text-slate-600">Manage inbound self-serve quotes.</p>
+    <div>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px" }}>
+        <div>
+          <p className="ui-kicker">Operations</p>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "26px", fontWeight: 800, color: "var(--navy)", marginTop: "6px" }}>
+            Quotes
+          </h1>
+          <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>
+            Manage inbound self-serve quote requests.
+          </p>
+        </div>
       </div>
-      <div className="overflow-hidden ui-card">
-        <table className="ui-table min-w-full divide-y divide-slate-100 text-sm">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium text-slate-700">Customer</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-700">Total</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-700">Status</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-700">Created</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {quotes.map((quote: any) => (
-              <tr key={quote._id}>
-                <td className="px-4 py-3">{quote.customerId}</td>
-                <td className="px-4 py-3">R{quote.totalAmount?.toLocaleString()}</td>
-                <td className="px-4 py-3">
-                  <span className="rounded-full border border-[#d2d5c6] bg-[#f8fafc] px-3 py-1 text-xs font-semibold uppercase text-slate-700">
-                    {quote.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  {quote.createdAt ? new Date(quote.createdAt).toLocaleDateString() : ""}
-                </td>
-              </tr>
-            ))}
-            {quotes.length === 0 && (
+
+      {/* Summary counts */}
+      <div style={{ display: "flex", gap: "8px", marginBottom: "20px", flexWrap: "wrap" }}>
+        {["All", "Pending", "Sent", "Accepted", "Declined"].map((s) => {
+          const count = s === "All" ? quotes.length : quotes.filter((q: any) => q.status === s).length;
+          return (
+            <div
+              key={s}
+              style={{
+                padding: "5px 14px",
+                borderRadius: "100px",
+                fontSize: "12px",
+                fontWeight: 600,
+                background: s === "All" ? "var(--primary)" : "#fff",
+                color: s === "All" ? "#fff" : "var(--text-muted)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              {s} ({count})
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="ui-card" style={{ overflow: "hidden" }}>
+        <div style={{ overflowX: "auto" }}>
+          <table className="ui-table">
+            <thead>
               <tr>
-                <td className="px-4 py-6 text-center text-slate-500" colSpan={4}>
-                  No quotes yet.
-                </td>
+                <th>Customer</th>
+                <th>Services</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {quotes.map((quote: any) => (
+                <tr key={quote._id}>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div
+                        style={{
+                          width: "30px",
+                          height: "30px",
+                          borderRadius: "50%",
+                          background: "#EFF6FF",
+                          color: "var(--primary)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "10px",
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {initials(quote._id)}
+                      </div>
+                      <div>
+                        <p style={{ fontWeight: 600, color: "var(--navy)", fontSize: "13px" }}>{quote.customerId}</p>
+                        <p style={{ fontSize: "11px", color: "var(--text-muted)" }}>#{quote.quoteNumber ?? quote._id.slice(-6)}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+                      {(quote.areas ?? []).slice(0, 3).map((a: any) => (
+                        <span
+                          key={a.type}
+                          style={{
+                            fontSize: "10px",
+                            background: "var(--surface-2)",
+                            border: "1px solid var(--border)",
+                            borderRadius: "100px",
+                            padding: "2px 8px",
+                            fontWeight: 600,
+                            color: "var(--text-muted)",
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          {a.type}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td style={{ fontWeight: 700, color: "var(--navy)" }}>
+                    R{quote.totalAmount?.toLocaleString() ?? "—"}
+                  </td>
+                  <td>
+                    <StatusBadge status={quote.status} />
+                  </td>
+                  <td style={{ color: "var(--text-muted)", fontSize: "12px" }}>
+                    {quote.createdAt ? new Date(quote.createdAt).toLocaleDateString("en-ZA") : "—"}
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      <a
+                        href={`/api/quotes/pdf/${quote._id}`}
+                        target="_blank"
+                        style={{
+                          padding: "5px 10px",
+                          borderRadius: "6px",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          border: "1px solid var(--border)",
+                          background: "#fff",
+                          color: "var(--navy)",
+                          textDecoration: "none",
+                        }}
+                      >
+                        PDF
+                      </a>
+                      {quote.status === "Pending" || quote.status === "Sent" ? (
+                        <form action={`/api/quotes/accept`} method="POST" style={{ display: "inline" }}>
+                          <input type="hidden" name="quoteId" value={quote._id} />
+                          <button
+                            type="submit"
+                            style={{
+                              padding: "5px 10px",
+                              borderRadius: "6px",
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              border: "none",
+                              background: "var(--primary)",
+                              color: "#fff",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Accept
+                          </button>
+                        </form>
+                      ) : null}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {quotes.length === 0 && (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: "center", padding: "48px", color: "var(--text-muted)", fontSize: "13px" }}>
+                    No quotes yet. They&apos;ll appear here once customers use the quote tool.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 }
-

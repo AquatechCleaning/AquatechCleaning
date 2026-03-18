@@ -1,20 +1,28 @@
 type Variant = "default" | "muted" | "contrast";
 
-const variantClass: Record<Variant, string> = {
-  default: "",
-  muted: "bg-[#fbf8e5]",
-  contrast: "bg-[#02203D] text-white",
+const variantStyle: Record<Variant, React.CSSProperties> = {
+  default:  {},
+  muted:    { background: "var(--bg)" },
+  contrast: { background: "var(--navy)", color: "#fff" },
 };
 
 export function Section({
   children,
   className = "",
   variant = "default",
+  style,
 }: {
   children: React.ReactNode;
   className?: string;
   variant?: Variant;
+  style?: React.CSSProperties;
 }) {
-  return <section className={`${variantClass[variant]} ${className}`.trim()}>{children}</section>;
+  return (
+    <section
+      className={className}
+      style={{ ...variantStyle[variant], ...style }}
+    >
+      {children}
+    </section>
+  );
 }
-

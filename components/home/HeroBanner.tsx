@@ -1,144 +1,175 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-const MIN_SCALE = 1;
-const MAX_SCALE = 1.4;
-
 export function HeroBanner() {
-  const router = useRouter();
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const [scale, setScale] = useState(MIN_SCALE);
-  const [isPrimaryHover, setIsPrimaryHover] = useState(false);
-  const [isSecondaryHover, setIsSecondaryHover] = useState(false);
+  const ref = useRef<HTMLElement | null>(null);
+  const [scale, setScale] = useState(1);
 
   useEffect(() => {
-    let rafId = 0;
-
-    const updateScale = () => {
-      const section = sectionRef.current;
-      if (!section) return;
-
-      const rect = section.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const viewportCenter = viewportHeight / 2;
-      const sectionCenter = rect.top + rect.height / 2;
-      const maxDistance = viewportHeight / 2 + rect.height / 2;
-      const distance = Math.abs(sectionCenter - viewportCenter);
-      const progress = Math.max(0, 1 - distance / maxDistance);
-      const nextScale = MIN_SCALE + (MAX_SCALE - MIN_SCALE) * progress;
-
-      setScale((prev) => (Math.abs(prev - nextScale) > 0.001 ? nextScale : prev));
+    let raf = 0;
+    const update = () => {
+      const el = ref.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const center = rect.top + rect.height / 2;
+      const dist = Math.abs(center - vh / 2);
+      const max = vh / 2 + rect.height / 2;
+      const p = Math.max(0, 1 - dist / max);
+      setScale(1 + 0.35 * p);
     };
-
-    const onScrollOrResize = () => {
-      if (rafId) return;
-      rafId = window.requestAnimationFrame(() => {
-        updateScale();
-        rafId = 0;
-      });
-    };
-
-    updateScale();
-    window.addEventListener("scroll", onScrollOrResize, { passive: true });
-    window.addEventListener("resize", onScrollOrResize);
-
-    return () => {
-      if (rafId) window.cancelAnimationFrame(rafId);
-      window.removeEventListener("scroll", onScrollOrResize);
-      window.removeEventListener("resize", onScrollOrResize);
-    };
+    const handler = () => { if (raf) return; raf = requestAnimationFrame(() => { update(); raf = 0; }); };
+    update();
+    window.addEventListener("scroll", handler, { passive: true });
+    window.addEventListener("resize", handler);
+    return () => { if (raf) cancelAnimationFrame(raf); window.removeEventListener("scroll", handler); window.removeEventListener("resize", handler); };
   }, []);
 
   return (
-    <section className="banner-section" ref={sectionRef}>
-      <div className="banner-carousel owl-theme owl-carousel" style={{ display: "block" }}>
-        <div className="slide-item active" style={{ position: "relative", minHeight: "780px", display: "block" }}>
+    <section
+      ref={ref}
+      style={{
+        background: "var(--navy)",
+        minHeight: "560px",
+        position: "relative",
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+        padding: "80px 0 120px",
+      }}
+    >
+      {/* Grid texture */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+          pointerEvents: "none",
+        }}
+      />
+      {/* Radial glow */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "radial-gradient(ellipse at 70% 50%, rgba(5,81,120,0.55) 0%, transparent 65%), radial-gradient(ellipse at 15% 80%, rgba(240,169,53,0.07) 0%, transparent 40%)",
+          pointerEvents: "none",
+        }}
+      />
+      {/* Logo image parallax */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: "url(/Logo.png)",
+          backgroundSize: "45% auto",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "calc(50% + 260px) center",
+          transform: `scale(${scale})`,
+          transformOrigin: "center",
+          transition: "transform 100ms linear",
+          opacity: 0.15,
+          pointerEvents: "none",
+        }}
+      />
+
+      <div className="ui-container" style={{ position: "relative", zIndex: 1 }}>
+        <div style={{ maxWidth: "580px" }}>
+          {/* Kicker */}
           <div
-            className="image-layer"
+            className="reveal-up"
             style={{
-              backgroundImage: "url(/Logo.png)",
-              position: "absolute",
-              inset: 0,
-              zIndex: 0,
-              pointerEvents: "none",
-              backgroundSize: "50% calc(50% + 124px)",
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "calc(50% + 240px) center",
-              transform: `scale(${scale})`,
-              transformOrigin: "center center",
-              transition: "transform 120ms linear",
-              animation: "none",
-              willChange: "transform",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "rgba(240,169,53,0.15)",
+              border: "1px solid rgba(240,169,53,0.3)",
+              borderRadius: "100px",
+              padding: "5px 16px",
+              fontSize: "11px",
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "var(--accent)",
+              marginBottom: "24px",
             }}
-          />
-          <div className="auto-container">
-            <div className="row" style={{ position: "relative", zIndex: 10, paddingTop: "180px", paddingBottom: "120px", pointerEvents: "auto" }}>
-              <div className="col-lg-7">
-                <div className="banner-wrapper">
-                  <div className="content-box" style={{ opacity: 1, visibility: "visible" }}>
-                    <h3 style={{ opacity: 1, transform: "none", visibility: "visible", paddingLeft: 0, marginLeft: 0, textAlign: "left" }}>
-                      Cape Town&apos;s Trusted Exterior Cleaning Experts
-                    </h3>
-                    <h2 style={{ opacity: 1, transform: "none", visibility: "visible" }}>For Homes & Businesses</h2>
-                    <p style={{ opacity: 1, transform: "none", visibility: "visible", textAlign: "justify", maxWidth: "calc(100% - 170px)", fontSize: "18px" }}>
-                      We specialise in safe, high-pressure and soft-wash cleaning for roofs, driveways, walls, windows, solar panels, and commercial properties, delivering powerful results without harming your surfaces.
-                    </p>
-                    <p style={{ opacity: 1, transform: "none", visibility: "visible", textAlign: "justify", maxWidth: "calc(100% - 170px)", fontSize: "18px" }}>
-                      Reliable. Professional. Spotless, every time.
-                    </p>
-                    <div className="btn-box" style={{ opacity: 1, transform: "none", visibility: "visible" }}>
-                      <button
-                        type="button"
-                        className="hero-cta hero-cta-primary"
-                        onClick={() => router.push("/services")}
-                        onMouseEnter={() => setIsPrimaryHover(true)}
-                        onMouseLeave={() => setIsPrimaryHover(false)}
-                        style={{
-                          background: isPrimaryHover ? "transparent" : "#FF9F0D",
-                          border: "2px solid #FF9F0D",
-                          color: isPrimaryHover ? "#FFFFFF" : "#080C24",
-                          borderRadius: "50px",
-                          padding: "15px 42px",
-                          fontSize: "18px",
-                          fontWeight: 500,
-                          lineHeight: "27px",
-                          transition: "0.3s",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <span>Discover More</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="hero-cta hero-cta-secondary"
-                        onClick={() => router.push("/quote")}
-                        onMouseEnter={() => setIsSecondaryHover(true)}
-                        onMouseLeave={() => setIsSecondaryHover(false)}
-                        style={{
-                          background: isSecondaryHover ? "transparent" : "#FFFFFF",
-                          border: "2px solid #FF9F0D",
-                          color: isSecondaryHover ? "#FFFFFF" : "#080C24",
-                          borderRadius: "50px",
-                          padding: "15px 48px",
-                          fontSize: "18px",
-                          fontWeight: 500,
-                          lineHeight: "27px",
-                          transition: "0.3s",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <span>Create Quote</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          >
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
+            Cape Town&apos;s Premium Exterior Cleaners
+          </div>
+
+          {/* Title */}
+          <h1
+            className="reveal-up reveal-up-d1"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(36px, 5vw, 60px)",
+              fontWeight: 800,
+              color: "#fff",
+              lineHeight: 1.05,
+              marginBottom: "20px",
+            }}
+          >
+            Surface-perfect.{" "}
+            <em style={{ color: "var(--accent)", fontStyle: "normal" }}>Every time.</em>
+          </h1>
+
+          {/* Subtitle */}
+          <p
+            className="reveal-up reveal-up-d2"
+            style={{
+              fontSize: "16px",
+              color: "rgba(255,255,255,0.65)",
+              lineHeight: 1.75,
+              marginBottom: "36px",
+              maxWidth: "460px",
+            }}
+          >
+            Roofs, driveways, facades &amp; commercial properties — cleaned with precision equipment and fully insured crews across the Western Cape.
+          </p>
+
+          {/* Actions */}
+          <div className="reveal-up reveal-up-d3" style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <Link href="/quote" className="ui-btn ui-btn-primary" style={{ padding: "14px 28px", fontSize: "15px" }}>
+              Get an Instant Quote →
+            </Link>
+            <Link href="/gallery" className="ui-btn ui-btn-outline-light" style={{ padding: "14px 28px", fontSize: "15px" }}>
+              View Our Work
+            </Link>
+          </div>
+
+          {/* Trust indicators */}
+          <div
+            className="reveal-up reveal-up-d4"
+            style={{
+              marginTop: "40px",
+              display: "flex",
+              gap: "24px",
+              flexWrap: "wrap",
+            }}
+          >
+            {["✓ Fully insured", "✓ Free site inspection", "✓ Instant online quotes"].map((t) => (
+              <span key={t} style={{ fontSize: "12px", color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>
+                {t}
+              </span>
+            ))}
           </div>
         </div>
       </div>
+
+      {/* Bottom wave */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0, left: 0, right: 0,
+          height: "40px",
+          background: "#fff",
+          clipPath: "ellipse(60% 100% at 50% 100%)",
+        }}
+      />
     </section>
   );
 }

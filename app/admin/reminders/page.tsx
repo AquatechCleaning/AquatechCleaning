@@ -1,14 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 
-type Reminder = {
-  _id: string;
-  dueDate: string;
-  status: string;
-  jobId: string;
-  customerId: string;
-};
+type Reminder = { _id: string; dueDate: string; status: string; jobId: string; customerId: string };
 
 export default function RemindersPage() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -17,60 +11,77 @@ export default function RemindersPage() {
   const load = async () => {
     const res = await fetch("/api/admin/reminders");
     const data = await res.json();
-    setReminders(data);
+    setReminders(Array.isArray(data) ? data : []);
   };
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
-  const runReminderJob = async () => {
+  const runJob = async () => {
     setLoading(true);
     await fetch("/api/reminders/run", { method: "POST" });
     await load();
     setLoading(false);
   };
 
+  const statusClass: Record<string, string> = {
+    Pending: "ui-badge-pending",
+    Sent: "ui-badge-sent",
+    Snoozed: "ui-badge-scheduled",
+    Cancelled: "ui-badge-declined",
+  };
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Reminders</h1>
-        <p className="text-sm text-slate-600">Maintenance follow-ups after completed jobs.</p>
+    <div>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "28px" }}>
+        <div>
+          <p className="ui-kicker">Operations</p>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "26px", fontWeight: 800, color: "var(--navy)", marginTop: "6px" }}>Reminders</h1>
+          <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>Maintenance follow-up reminders after completed jobs.</p>
+        </div>
+        <button
+          className="ui-btn ui-btn-secondary"
+          onClick={runJob}
+          disabled={loading}
+          style={{ opacity: loading ? 0.7 : 1 }}
+        >
+          {loading ? "Running…" : "⏰ Send Due Reminders"}
+        </button>
       </div>
-      <button
-        onClick={runReminderJob}
-        className="ui-btn ui-btn-secondary"
-        disabled={loading}
-      >
-        {loading ? "Running..." : "Send due reminders"}
-      </button>
-      <div className="overflow-hidden ui-card">
-        <table className="ui-table min-w-full divide-y divide-slate-100 text-sm">
-          <thead className="bg-slate-50">
+
+      <div className="ui-card" style={{ overflow: "hidden" }}>
+        <table className="ui-table">
+          <thead>
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-slate-700">Due date</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-700">Status</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-700">Job</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Job</th>
+              <th>Customer</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
-            {reminders.map((reminder) => (
-              <tr key={reminder._id}>
-                <td className="px-4 py-3">
-                  {reminder.dueDate ? new Date(reminder.dueDate).toLocaleDateString() : ""}
+          <tbody>
+            {reminders.map((r) => (
+              <tr key={r._id}>
+                <td style={{ fontWeight: 600, color: "var(--navy)" }}>
+                  {r.dueDate ? new Date(r.dueDate).toLocaleDateString("en-ZA") : "—"}
                 </td>
-                <td className="px-4 py-3">
-                  <span className="rounded-full border border-[#d2d5c6] bg-[#f8fafc] px-3 py-1 text-xs font-semibold uppercase text-slate-700">
-                    {reminder.status}
+                <td>
+                  <span className={`ui-badge ${statusClass[r.status] ?? "ui-badge-expired"}`}>
+                    <span className="ui-status-dot" />
+                    {r.status}
                   </span>
                 </td>
-                <td className="px-4 py-3">{reminder.jobId}</td>
+                <td style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--text-muted)" }}>
+                  #{String(r.jobId).slice(-8)}
+                </td>
+                <td style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--text-muted)" }}>
+                  #{String(r.customerId).slice(-8)}
+                </td>
               </tr>
             ))}
             {reminders.length === 0 && (
               <tr>
-                <td className="px-4 py-6 text-center text-slate-500" colSpan={3}>
-                  No reminders yet.
+                <td colSpan={4} style={{ textAlign: "center", padding: "48px", color: "var(--text-muted)", fontSize: "13px" }}>
+                  No reminders yet. They&apos;re created automatically after jobs are completed.
                 </td>
               </tr>
             )}
@@ -80,4 +91,3 @@ export default function RemindersPage() {
     </div>
   );
 }
-
