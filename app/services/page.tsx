@@ -1,4 +1,15 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Our Services | Roof, Window, Solar & Driveway Cleaning Cape Town",
+  description: "Professional roof cleaning, gutter cleaning, solar panel cleaning, window cleaning, driveway washing and deck restoration across Cape Town and the Western Cape.",
+  openGraph: {
+    title: "Exterior Cleaning Services | Aquatech Cleaning Cape Town",
+    description: "Roof, gutter, solar panel, window, driveway and deck cleaning. Professional pressure and soft washing across Cape Town.",
+    url: "https://aquatechcleaning.co.za/services",
+  },
+};
 
 const services = [
   {

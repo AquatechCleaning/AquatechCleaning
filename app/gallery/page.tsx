@@ -1,4 +1,15 @@
+import type { Metadata } from "next";
 import { MissionBeforeAfter } from "@/components/home/MissionBeforeAfter";
+
+export const metadata: Metadata = {
+  title: "Gallery | Before & After Cleaning Results — Aquatech Cleaning",
+  description: "See the results for yourself. Real before and after photos of roof, driveway, paving, deck and window cleaning jobs across Cape Town.",
+  openGraph: {
+    title: "Before & After Gallery | Aquatech Cleaning Cape Town",
+    description: "Real results from real jobs — roof cleaning, driveway washing, deck restoration and more across Cape Town.",
+    url: "https://aquatechcleaning.co.za/gallery",
+  },
+};
 
 type MediaItem = { _id: string; title: string; locationLabel?: string; serviceType?: string; imageBeforeUrl: string; imageAfterUrl: string };
 

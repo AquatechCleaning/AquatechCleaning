@@ -1,4 +1,15 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "About Us | Aquatech Cleaning Cape Town",
+  description: "Cape Town's trusted exterior cleaning specialists. Over 500 properties cleaned across the Western Cape with a 5-star track record.",
+  openGraph: {
+    title: "About Aquatech Cleaning | Cape Town's Exterior Cleaning Experts",
+    description: "Over 500 properties cleaned across Cape Town and the Western Cape. Pressure washing and soft washing done right.",
+    url: "https://aquatechcleaning.co.za/about",
+  },
+};
 
 const highlights = [
   { icon: "🏆", title: "10+ Years Experience", body: "A decade of exterior cleaning across the Western Cape. We've seen every surface type." },
