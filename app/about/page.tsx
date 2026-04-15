@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const highlights = [
-  { icon: "🏆", title: "10+ Years Experience", body: "A decade of exterior cleaning across the Western Cape — we've seen every surface type." },
+  { icon: "🏆", title: "10+ Years Experience", body: "A decade of exterior cleaning across the Western Cape. We've seen every surface type." },
   { icon: "🛡️", title: "Fully Insured", body: "Our crews carry full public liability insurance and height-work safety gear on every job." },
   { icon: "⚙️", title: "Modern Equipment", body: "Rotary surface cleaners, soft-wash rigs, and water-capture systems for sensitive sites." },
   { icon: "📸", title: "Detailed Reporting", body: "After every job you receive photos, recommendations, and a post-clean inspection report." },
@@ -11,7 +11,7 @@ export default function AboutPage() {
   return (
     <div style={{ background: "var(--bg)" }}>
       {/* Hero */}
-      <div style={{ background: "var(--navy)", padding: "64px 0 80px", position: "relative", overflow: "hidden" }}>
+      <div className="page-hero" style={{ background: "var(--navy)", padding: "64px 0 80px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "48px 48px", pointerEvents: "none" }} />
         <div className="ui-container" style={{ position: "relative" }}>
           <p className="ui-kicker reveal-up" style={{ color: "var(--accent)" }}>Our Story</p>
@@ -25,21 +25,27 @@ export default function AboutPage() {
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "40px", background: "var(--bg)", clipPath: "ellipse(60% 100% at 50% 100%)" }} />
       </div>
 
-      <div className="ui-container" style={{ padding: "60px 24px" }}>
+      <div className="ui-container pg-body" style={{ padding: "60px 24px" }}>
         {/* Story */}
         <div className="ui-card reveal-up" style={{ padding: "40px", marginBottom: "24px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", alignItems: "center" }}>
+          <div className="rsp-grid-2" style={{ gap: "40px", alignItems: "center" }}>
             <div>
               <h2 style={{ fontFamily: "var(--font-display)", fontSize: "22px", fontWeight: 800, color: "var(--navy)", marginBottom: "16px" }}>
                 How we started
               </h2>
               <p style={{ fontSize: "15px", color: "#334155", lineHeight: 1.8, marginBottom: "16px" }}>
-                We started with roof cleaning and gutter work, then expanded into paving, walls, and commercial
-                exteriors as clients asked for a single trusted provider.
+                We are Cape Town&apos;s #1 pressure washing service, trusted by homeowners and businesses alike
+                with over 500+ properties professionally cleaned. Formerly known as Aqua Blast Power Wash and
+                Clean Tech Exterior Cleaning, we&apos;ve built our reputation on speed, precision, and quality.
+              </p>
+              <p style={{ fontSize: "15px", color: "#334155", lineHeight: 1.8, marginBottom: "16px" }}>
+                Using high-performance equipment and expert techniques, we tackle dirt, grime, and stains on all
+                exterior surfaces. Every clean is finished with biocide treatment to ensure long-lasting results
+                and prevent regrowth of mold, moss, algae, and mildew.
               </p>
               <p style={{ fontSize: "15px", color: "#334155", lineHeight: 1.8 }}>
-                Every project includes a safety plan, gear suited to the surface, and respectful crews who leave
-                your space clean and your mind at ease.
+                When you choose us, you&apos;re choosing a team committed to fast, reliable service without ever
+                compromising on quality.
               </p>
             </div>
             <div
@@ -51,10 +57,10 @@ export default function AboutPage() {
                 border: "1px solid var(--border)",
               }}
             >
-              <div style={{ fontFamily: "var(--font-display)", fontSize: "48px", fontWeight: 800, color: "var(--navy)" }}>10+</div>
-              <div style={{ fontSize: "13px", color: "var(--text-muted)", fontWeight: 600 }}>Years serving Cape Town</div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: "36px", fontWeight: 800, color: "var(--primary)", marginTop: "16px" }}>850+</div>
-              <div style={{ fontSize: "13px", color: "var(--text-muted)", fontWeight: 600 }}>Satisfied clients</div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: "48px", fontWeight: 800, color: "var(--navy)" }}>500+</div>
+              <div style={{ fontSize: "13px", color: "var(--text-muted)", fontWeight: 600 }}>Properties professionally cleaned</div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: "36px", fontWeight: 800, color: "var(--primary)", marginTop: "16px" }}>#1</div>
+              <div style={{ fontSize: "13px", color: "var(--text-muted)", fontWeight: 600 }}>Pressure washing service in Cape Town</div>
             </div>
           </div>
         </div>

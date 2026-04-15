@@ -39,6 +39,7 @@ export function StatsBlock({ stats }: { stats: Stat[] }) {
   return (
     <div
       ref={ref}
+      className="stats-grid"
       style={{
         display: "grid",
         gridTemplateColumns: `repeat(${stats.length}, 1fr)`,

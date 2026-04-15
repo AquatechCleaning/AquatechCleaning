@@ -27,6 +27,7 @@ const serviceTypes: { type: AreaType; label: string; icon: string }[] = [
 ];
 
 const libraries: any[] = ["drawing", "geometry", "places"];
+const MAPS_LOADER_ID = "aquatech-maps";
 const defaultCenter = { lat: -33.918861, lng: 18.4233 };
 
 export default function QuotePage() {
@@ -73,7 +74,7 @@ export default function QuotePage() {
   const mapRef = useRef<google.maps.Map | null>(null);
   const drawnShapesRef = useRef<google.maps.MVCObject[]>([]);
 
-  const { isLoaded } = useJsApiLoader({ googleMapsApiKey: apiKey, libraries });
+  const { isLoaded } = useJsApiLoader({ id: MAPS_LOADER_ID, googleMapsApiKey: apiKey, libraries });
 
   const handlePlaceChanged = () => {
     const place = autocompleteRef.current?.getPlace();
@@ -207,7 +208,7 @@ export default function QuotePage() {
   return (
     <div style={{ background: "var(--bg)" }}>
       {/* Header */}
-      <div style={{ background: "var(--navy)", padding: "48px 0 64px", position: "relative", overflow: "hidden" }}>
+      <div className="page-hero" style={{ background: "var(--navy)", padding: "48px 0 64px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "48px 48px", pointerEvents: "none" }} />
         <div className="ui-container" style={{ position: "relative" }}>
           <p className="ui-kicker" style={{ color: "var(--accent)" }}>Instant Quoting</p>
@@ -221,14 +222,14 @@ export default function QuotePage() {
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "40px", background: "var(--bg)", clipPath: "ellipse(60% 100% at 50% 100%)" }} />
       </div>
 
-      <div className="ui-container" style={{ padding: "40px 24px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "24px", alignItems: "start" }}>
+      <div className="ui-container pg-body" style={{ padding: "40px 24px" }}>
+        <div className="rsp-grid-quote" style={{ gap: "24px", alignItems: "start" }}>
           {/* Map column */}
           <div>
             {/* Service type picker */}
             <div className="ui-card" style={{ padding: "16px", marginBottom: "16px" }}>
               <p style={labelStyle}>Select surface type to measure</p>
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <div className="pills-rsp" style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 {serviceTypes.map((s) => (
                   <button
                     key={s.type}
@@ -255,6 +256,7 @@ export default function QuotePage() {
 
             {/* Map */}
             <div
+              className="map-rsp"
               style={{
                 borderRadius: "16px",
                 overflow: "hidden",
@@ -329,24 +331,27 @@ export default function QuotePage() {
 
             {/* Map actions */}
             {hasValidKey && (
-              <div style={{ marginTop: "12px", display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
                 {drawingMode && (
                   <button
                     className={`ui-btn ${isMeasuring ? "ui-btn-secondary" : "ui-btn-primary"}`}
+                    style={{ width: "100%" }}
                     onClick={() => setIsMeasuring(!isMeasuring)}
                   >
                     {isMeasuring ? "⏹ Stop Drawing" : `✏️ Draw ${serviceTypes.find((s) => s.type === activeType)?.label}`}
                   </button>
                 )}
-                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>or enter manually:</span>
-                <input
-                  style={{ ...inputStyle, width: "100px" }}
-                  type="number"
-                  placeholder={`${unitFor(activeType) === "units" ? "Count" : unitFor(activeType) === "m" ? "Metres" : "m²"}`}
-                  value={manualSqm}
-                  onChange={(e) => setManualSqm(e.target.value)}
-                />
-                <button className="ui-btn ui-btn-ghost" onClick={addManual} disabled={!manualSqm}>+ Add</button>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <span style={{ fontSize: "12px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>Enter manually:</span>
+                  <input
+                    style={{ ...inputStyle, flex: 1, minWidth: 0 }}
+                    type="number"
+                    placeholder={`${unitFor(activeType) === "units" ? "Count" : unitFor(activeType) === "m" ? "Metres" : "m²"}`}
+                    value={manualSqm}
+                    onChange={(e) => setManualSqm(e.target.value)}
+                  />
+                  <button className="ui-btn ui-btn-ghost" style={{ flexShrink: 0 }} onClick={addManual} disabled={!manualSqm}>+ Add</button>
+                </div>
               </div>
             )}
 
@@ -419,7 +424,7 @@ export default function QuotePage() {
               <h3 style={{ fontFamily: "var(--font-display)", fontSize: "14px", fontWeight: 700, color: "var(--navy)", marginBottom: "14px" }}>
                 👤 Your Details
               </h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div className="rsp-grid-form-2" style={{ gap: "10px" }}>
                 <div>
                   <label style={labelStyle}>First Name *</label>
                   <input style={inputStyle} placeholder="John" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
@@ -454,7 +459,7 @@ export default function QuotePage() {
                     <label style={labelStyle}>Company Name *</label>
                     <input style={inputStyle} value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })} />
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "10px" }}>
+                  <div className="rsp-grid-form-2" style={{ gap: "10px", marginTop: "10px" }}>
                     <div>
                       <label style={labelStyle}>Reg Number</label>
                       <input style={inputStyle} value={form.companyRegNumber} onChange={(e) => setForm({ ...form, companyRegNumber: e.target.value })} />

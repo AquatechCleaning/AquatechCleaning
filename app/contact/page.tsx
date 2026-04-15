@@ -8,6 +8,20 @@ export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const submitToGoogleForm = (f: typeof form) => {
+    const data = new URLSearchParams({
+      "entry.610817925": f.name,
+      "entry.1601371558": f.phone,
+      "entry.506579315": f.address,
+      "entry.796986695": "Contact Form Enquiry",
+      "entry.604884726": f.message,
+    });
+    fetch(
+      "https://docs.google.com/forms/d/e/1FAIpQLSfeT2Zq-L_9u_Ca-lSss8a8jIcx19K2crdj5pOaktmC5kzGmw/formResponse",
+      { method: "POST", mode: "no-cors", body: data }
+    ).catch(() => {});
+  };
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -16,6 +30,7 @@ export default function ContactPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
+    submitToGoogleForm(form);
     setSubmitted(true);
     setLoading(false);
     setForm({ name: "", email: "", phone: "", address: "", message: "" });
@@ -23,7 +38,7 @@ export default function ContactPage() {
 
   const details = [
     { icon: "📞", label: "Phone", value: siteConfig.phoneDisplay, href: siteConfig.phoneHref },
-    { icon: "✉️", label: "Email", value: "hello@aquatechcleaning.co.za", href: "mailto:hello@aquatechcleaning.co.za" },
+    { icon: "✉️", label: "Email", value: "aston@aquatechcleaning.co.za", href: "mailto:aston@aquatechcleaning.co.za" },
     { icon: "📍", label: "Location", value: "Cape Town, Western Cape, South Africa", href: null },
     { icon: "⏰", label: "Hours", value: siteConfig.hoursText, href: null },
   ];
@@ -31,7 +46,7 @@ export default function ContactPage() {
   return (
     <div style={{ background: "var(--bg)" }}>
       {/* Header */}
-      <div style={{ background: "var(--navy)", padding: "64px 0 80px", position: "relative", overflow: "hidden" }}>
+      <div className="page-hero" style={{ background: "var(--navy)", padding: "64px 0 80px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "48px 48px", pointerEvents: "none" }} />
         <div className="ui-container" style={{ position: "relative" }}>
           <p className="ui-kicker reveal-up" style={{ color: "var(--accent)" }}>Get In Touch</p>
@@ -43,8 +58,8 @@ export default function ContactPage() {
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "40px", background: "var(--bg)", clipPath: "ellipse(60% 100% at 50% 100%)" }} />
       </div>
 
-      <div className="ui-container" style={{ padding: "60px 24px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "24px", alignItems: "start" }}>
+      <div className="ui-container pg-body" style={{ padding: "60px 24px" }}>
+        <div className="rsp-grid-contact" style={{ gap: "24px", alignItems: "start" }}>
           {/* Form */}
           <div className="ui-card reveal-up" style={{ padding: "36px" }}>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: "18px", fontWeight: 800, color: "var(--navy)", marginBottom: "24px" }}>
@@ -59,7 +74,7 @@ export default function ContactPage() {
               </div>
             ) : (
               <form onSubmit={submit}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
+                <div className="rsp-grid-form-2" style={{ gap: "16px", marginBottom: "16px" }}>
                   <div className="ui-form-group" style={{ margin: 0 }}>
                     <label className="ui-label">Name</label>
                     <input className="ui-input" placeholder="John Smith" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />

@@ -3,6 +3,7 @@ import { HeroBanner } from "@/components/home/HeroBanner";
 import { StatsBlock } from "@/components/sections/StatsBlock";
 import { TestimonialsSlider } from "@/components/sections/TestimonialsSlider";
 import { BeforeAfterGallery } from "@/components/sections/BeforeAfterGallery";
+import { ServiceAreaMap } from "@/components/sections/ServiceAreaMap";
 
 type PublicStats = {
   clientsServed: number;
@@ -47,16 +48,16 @@ async function getMedia(): Promise<MediaItem[]> {
 }
 
 const services = [
-  { icon: "🏠", title: "Roof Cleaning", desc: "Soft-wash systems, anti-moss treatment, gutter clearing and post-clean inspection photos.", href: "/services#roof" },
-  { icon: "🛣️", title: "Driveway & Paving", desc: "High-pressure cleaning, de-greasing, re-sanding and sealing options.", href: "/services#driveway" },
-  { icon: "🏗️", title: "Walls & Facades", desc: "Gentle facade washing to protect paint and waterproofing while removing pollutants.", href: "/services#walls" },
-  { icon: "🏢", title: "Commercial", desc: "Retail parks, warehouses, forecourts — minimal downtime, safety docs on request.", href: "/services#commercial" },
-  { icon: "🪟", title: "Windows", desc: "Streak-free window cleaning for all property sizes, including high-access jobs.", href: "/services#windows" },
-  { icon: "☀️", title: "Solar Panels", desc: "Specialist panel cleaning to maintain efficiency without scratching surfaces.", href: "/services#solar" },
+  { icon: "☀️", title: "Solar Panel Cleaning", desc: "RoDi (Reverse Osmosis, De-ionized) pure water technology. No chemicals, no residue buildup, optimal efficiency and cleanliness maintained.", href: "/services#solar" },
+  { icon: "🪟", title: "Window Cleaning", desc: "Sparkling windows without chemicals or soaps using our RoDi technology. No residue means dirt can't cling, keeping windows cleaner and shinier for longer.", href: "/services#windows" },
+  { icon: "🏠", title: "Roof Cleaning", desc: "Expert pressure washing and Softwashing to eliminate existing organic growth and inhibit future growth, leaving you with the cleanest roof in the neighbourhood.", href: "/services#roof" },
+  { icon: "🏗️", title: "Gutter Cleaning & Whitening", desc: "Clears blockages and removes black tiger stripes, ensuring proper drainage and enhancing your exterior's curb appeal.", href: "/services#gutters" },
+  { icon: "🛣️", title: "Patio, Driveway & Paving", desc: "Advanced pressure washing and soft washing prevent micro flooding, slip hazards and surface deterioration with thorough removal of dirt and organic growth.", href: "/services#driveway" },
+  { icon: "🌿", title: "Deck & Wood Cleaning", desc: "Specialised pressure and soft washing revitalises wooden fencing, decks, and other surfaces, restoring their pristine appearance and making them look brand new.", href: "/services#deck" },
 ];
 
 const processSteps = [
-  { step: "01", title: "Draw your area", body: "Use our Google Maps tool to draw the surfaces you need cleaned — we calculate the m² instantly." },
+  { step: "01", title: "Draw your area", body: "Use our Google Maps tool to draw the surfaces you need cleaned. We calculate the m² instantly." },
   { step: "02", title: "Get your estimate", body: "Our pricing engine generates a quote in seconds. No guesswork, no waiting." },
   { step: "03", title: "We confirm & book", body: "Our team reviews the quote and confirms within 1 business day with a finalised schedule." },
   { step: "04", title: "Spotless results", body: "Fully insured crews, detailed after-photos, and a satisfaction guarantee on every job." },
@@ -66,10 +67,10 @@ export default async function Home() {
   const [stats, testimonials, media] = await Promise.all([getStats(), getTestimonials(), getMedia()]);
 
   const statItems = [
-    { label: "Clients Served", value: stats.clientsServed || 850, suffix: "+" },
+    { label: "Clients Served", value: stats.clientsServed || 500, suffix: "+" },
     { label: "m² Cleaned", value: stats.totalSqmCleaned || 12400, suffix: "+", decimals: 0 },
-    { label: "Avg Rating", value: stats.averageRating || 4.9, suffix: " / 5.0", decimals: 1 },
-    { label: "Repeat Rate", value: stats.repeatCustomerRate || 73, suffix: "%", decimals: 0 },
+    { label: "Avg Rating", value: stats.averageRating || 5.0, suffix: " / 5.0", decimals: 1 },
+    { label: "Return Clients", value: stats.repeatCustomerRate || 85, suffix: "%", decimals: 0 },
   ];
 
   return (
@@ -77,14 +78,14 @@ export default async function Home() {
       <HeroBanner />
 
       {/* Stats */}
-      <section style={{ background: "#fff", borderBottom: "1px solid var(--border)", padding: "32px 0" }}>
+      <section className="sec" style={{ background: "#fff", borderBottom: "1px solid var(--border)", padding: "32px 0" }}>
         <div className="ui-container">
           <StatsBlock stats={statItems} />
         </div>
       </section>
 
       {/* Services */}
-      <section style={{ background: "var(--bg)", padding: "80px 0" }}>
+      <section className="sec" style={{ background: "var(--bg)", padding: "80px 0" }}>
         <div className="ui-container">
           <div className="ui-section-header reveal-up">
             <p className="ui-kicker">What We Do</p>
@@ -160,7 +161,7 @@ export default async function Home() {
       </section>
 
       {/* How it works */}
-      <section style={{ background: "#fff", padding: "80px 0" }}>
+      <section className="sec" style={{ background: "#fff", padding: "80px 0" }}>
         <div className="ui-container">
           <div className="ui-section-header reveal-up" style={{ textAlign: "center" }}>
             <p className="ui-kicker">Our Process</p>
@@ -201,7 +202,7 @@ export default async function Home() {
 
       {/* Gallery */}
       {media.length > 0 && (
-        <section style={{ background: "var(--bg)", padding: "80px 0" }}>
+        <section className="sec" style={{ background: "var(--bg)", padding: "80px 0" }}>
           <div className="ui-container">
             <div className="ui-section-header reveal-up" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
               <div>
@@ -216,7 +217,7 @@ export default async function Home() {
       )}
 
       {/* Testimonials */}
-      <section style={{ background: "#fff", padding: "80px 0" }}>
+      <section className="sec" style={{ background: "#fff", padding: "80px 0" }}>
         <div className="ui-container">
           <div className="ui-section-header reveal-up">
             <p className="ui-kicker">Client Feedback</p>
@@ -230,17 +231,16 @@ export default async function Home() {
       </section>
 
       {/* Service area */}
-      <section style={{ background: "var(--navy)", padding: "64px 0" }}>
+      <section className="sec" style={{ background: "var(--navy)", padding: "64px 0" }}>
         <div className="ui-container">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "48px", alignItems: "center" }}>
+          <div className="rsp-grid-2" style={{ gap: "48px", alignItems: "center" }}>
             <div className="reveal-up">
               <p className="ui-kicker" style={{ color: "var(--accent)" }}>Service Area</p>
               <h2 className="ui-title" style={{ color: "#fff", marginTop: "8px" }}>
                 Serving Cape Town and surrounds
               </h2>
               <p style={{ color: "rgba(255,255,255,0.65)", marginTop: "16px", lineHeight: 1.8, fontSize: "15px" }}>
-                Northern and Southern suburbs, Atlantic Seaboard, Stellenbosch, Paarl, and the Winelands.
-                Frequently travel for larger commercial work outside these areas.
+                Cape Town, Atlantic Seaboard, Southern &amp; Northern Suburbs, False Bay, Stellenbosch, Paarl, Franschhoek, Grabouw, Yzerfontein &amp; Langebaan.
               </p>
               <div style={{ marginTop: "28px", display: "flex", gap: "12px" }}>
                 <Link href="/contact" className="ui-btn ui-btn-primary">Contact Us</Link>
@@ -248,21 +248,15 @@ export default async function Home() {
               </div>
             </div>
             <div
-              className="reveal-up reveal-up-d2 float-soft"
+              className="reveal-up reveal-up-d2"
               style={{
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: "20px",
-                padding: "24px",
+                overflow: "hidden",
                 aspectRatio: "4/3",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "rgba(255,255,255,0.4)",
-                fontSize: "14px",
+                border: "1px solid rgba(255,255,255,0.1)",
               }}
             >
-              Google Maps — connect in next.config.ts
+              <ServiceAreaMap />
             </div>
           </div>
         </div>

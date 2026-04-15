@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers/Providers";
@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   description:
     "Professional exterior cleaning for roofs, driveways, paving, and facades across Cape Town and the Western Cape. Instant online quotes.",
   metadataBase: new URL("https://aquatechcleaning.co.za"),
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

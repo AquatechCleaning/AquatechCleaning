@@ -17,7 +17,7 @@ export default async function GalleryPage() {
   return (
     <div style={{ background: "var(--bg)" }}>
       {/* Header */}
-      <div style={{ background: "var(--navy)", padding: "64px 0 80px", position: "relative", overflow: "hidden" }}>
+      <div className="page-hero" style={{ background: "var(--navy)", padding: "64px 0 80px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "48px 48px", pointerEvents: "none" }} />
         <div className="ui-container" style={{ position: "relative" }}>
           <p className="ui-kicker reveal-up" style={{ color: "var(--accent)" }}>Our Portfolio</p>
@@ -31,10 +31,10 @@ export default async function GalleryPage() {
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "40px", background: "var(--bg)", clipPath: "ellipse(60% 100% at 50% 100%)" }} />
       </div>
 
-      <div className="ui-container" style={{ padding: "60px 24px" }}>
+      <div className="ui-container pg-body" style={{ padding: "60px 24px" }}>
         {/* Interactive before/after demo */}
         <div className="ui-card reveal-up" style={{ padding: "32px", marginBottom: "40px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px", alignItems: "center" }}>
+          <div className="rsp-grid-2" style={{ gap: "32px", alignItems: "center" }}>
             <div>
               <p className="ui-kicker">Interactive Demo</p>
               <h2 style={{ fontFamily: "var(--font-display)", fontSize: "20px", fontWeight: 800, color: "var(--navy)", marginTop: "8px", marginBottom: "10px" }}>

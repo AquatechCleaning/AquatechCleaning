@@ -2,46 +2,46 @@ import Link from "next/link";
 
 const services = [
   {
-    id: "roof",
-    icon: "🏠",
-    title: "Roof Cleaning",
-    description: "Soft-wash systems, anti-moss treatments, and careful pressure for tiles, sheeting, and gutters.",
-    bullets: ["Safe access and fall protection", "Moss, lichen, and algae removal", "Gutter clearing and flushing", "Post-clean inspection and photos"],
-  },
-  {
-    id: "driveway",
-    icon: "🛣️",
-    title: "Driveway & Paving",
-    description: "High-pressure cleaning, de-greasing, and re-sanding for driveways, patios, and poolsides.",
-    bullets: ["Oil stain and tyre mark removal", "Weed control between joints", "Re-sanding and sealing options", "Careful water management"],
-  },
-  {
-    id: "walls",
-    icon: "🏗️",
-    title: "Walls & Facades",
-    description: "Gentle facade washing to protect paint and waterproofing while removing pollutants.",
-    bullets: ["Soft-wash for painted surfaces", "Efflorescence and salt stain removal", "Height access with proper gear", "Windows and trims protected"],
-  },
-  {
-    id: "commercial",
-    icon: "🏢",
-    title: "Commercial & Industrial",
-    description: "Retail parks, warehouses, forecourts, and fleet yards with minimal downtime.",
-    bullets: ["After-hours and weekend work", "Water capture on sensitive sites", "Team scaling for tight timelines", "Safety documentation on request"],
+    id: "solar",
+    icon: "☀️",
+    title: "Solar Panel Cleaning",
+    description: "Elevate your solar panel cleaning with our RoDi (Reverse Osmosis, De-ionized) technology. Using pure water without chemicals, it ensures optimal efficiency and cleanliness. Unlike tap water, it prevents residue buildup, maintaining peak performance and visual appeal.",
+    bullets: ["Pure RoDi water, no chemicals", "Prevents residue buildup", "Maintains peak performance", "Roof safety protocols on every job"],
   },
   {
     id: "windows",
     icon: "🪟",
     title: "Window Cleaning",
-    description: "Streak-free exterior and interior window cleaning for all property types and heights.",
-    bullets: ["Purified water fed pole system", "Safe high-reach access", "Frames and sills included", "Residential and commercial"],
+    description: "Achieve sparkling windows without chemicals or soaps using our RoDi technology. Our method leaves no residue for dirt to cling to, keeping windows cleaner and shinier for longer. Say goodbye to streaks with our chemical-free solutions.",
+    bullets: ["Chemical-free RoDi method", "No streaks or residue", "Windows stay cleaner longer", "Residential and commercial"],
   },
   {
-    id: "solar",
-    icon: "☀️",
-    title: "Solar Panel Cleaning",
-    description: "Specialist cleaning to restore panel efficiency without scratching surfaces.",
-    bullets: ["Non-abrasive soft wash method", "Efficiency assessment before/after", "Roof safety protocols", "Per-panel pricing"],
+    id: "roof",
+    icon: "🏠",
+    title: "Roof Cleaning",
+    description: "Ensuring the upkeep of your roof's exterior is crucial to prevent damage from organic growth, dirt and debris. Our expert solutions utilise both pressure washing and Softwashing techniques to eliminate existing organic growth and inhibit future growth.",
+    bullets: ["Pressure washing and Softwashing", "Eliminates moss, algae, and lichen", "Inhibits future organic growth", "Post-clean inspection and photos"],
+  },
+  {
+    id: "gutters",
+    icon: "🏗️",
+    title: "Gutter Cleaning & Whitening",
+    description: "Maintaining your exterior includes cleaning your gutters to ensure proper drainage and prevent damage from stagnant water and organic growth. Our solution not only clears blockages but also removes black stripes, known as tiger stripes, enhancing your exterior's curb appeal.",
+    bullets: ["Clears all blockages", "Removes tiger stripe staining", "Prevents stagnant water damage", "Improves curb appeal"],
+  },
+  {
+    id: "driveway",
+    icon: "🛣️",
+    title: "Patio, Driveway & Paving Cleaning",
+    description: "Cleaning the flat surfaces around your property is essential for preventing micro flooding, slip hazards, and maintaining surface health. Our advanced pressure washing and soft washing techniques guarantee thorough removal of dirt and organic growth, ensuring long-lasting cleanliness and safety.",
+    bullets: ["Prevents micro flooding and slip hazards", "Removes dirt and organic growth", "Pressure washing and soft washing", "Long-lasting cleanliness"],
+  },
+  {
+    id: "deck",
+    icon: "🌿",
+    title: "Deck & Wood Cleaning",
+    description: "Revitalize your wooden fencing, decks, and other surfaces with our specialized pressure and soft washing solutions. Our techniques breathe new life into these areas, restoring their pristine appearance and making them look brand new once more.",
+    bullets: ["Specialised for wood surfaces", "Revitalises decks and fencing", "Pressure and soft washing", "Restores pristine appearance"],
   },
 ];
 
@@ -49,7 +49,7 @@ export default function ServicesPage() {
   return (
     <div style={{ background: "var(--bg)" }}>
       {/* Header */}
-      <div style={{ background: "var(--navy)", padding: "64px 0 80px", position: "relative", overflow: "hidden" }}>
+      <div className="page-hero" style={{ background: "var(--navy)", padding: "64px 0 80px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "48px 48px", pointerEvents: "none" }} />
         <div className="ui-container" style={{ position: "relative" }}>
           <p className="ui-kicker reveal-up" style={{ color: "var(--accent)" }}>What We Offer</p>
@@ -64,7 +64,7 @@ export default function ServicesPage() {
       </div>
 
       {/* Services grid */}
-      <div className="ui-container" style={{ padding: "60px 24px" }}>
+      <div className="ui-container pg-body" style={{ padding: "60px 24px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
           {services.map((s, i) => (
             <div

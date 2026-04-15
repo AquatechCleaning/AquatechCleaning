@@ -43,12 +43,12 @@ export function Navbar() {
             <a href={siteConfig.phoneHref} style={{ color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>
               📞 {siteConfig.phoneDisplay}
             </a>
-            <span style={{ color: "rgba(255,255,255,0.4)" }}>|</span>
-            <a href="mailto:hello@aquatechcleaning.co.za" style={{ color: "rgba(255,255,255,0.7)", textDecoration: "none" }}>
-              hello@aquatechcleaning.co.za
+            <span className="topbar-sep" style={{ color: "rgba(255,255,255,0.4)" }}>|</span>
+            <a className="topbar-email" href={`mailto:${siteConfig.email}`} style={{ color: "rgba(255,255,255,0.7)", textDecoration: "none" }}>
+              {siteConfig.email}
             </a>
           </div>
-          <div style={{ color: "rgba(255,255,255,0.5)" }}>⏰ {siteConfig.hoursText}</div>
+          <div className="topbar-hours" style={{ color: "rgba(255,255,255,0.5)" }}>⏰ {siteConfig.hoursText}</div>
         </div>
       </div>
 
@@ -121,9 +121,9 @@ export function Navbar() {
             ))}
           </nav>
 
-          {/* CTA */}
+          {/* CTA + hamburger */}
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <Link href="/quote" className="ui-btn ui-btn-primary">
+            <Link href="/quote" className="ui-btn ui-btn-primary nav-cta">
               Get a Quote →
             </Link>
             {/* Mobile hamburger */}
@@ -132,16 +132,24 @@ export function Navbar() {
               style={{
                 display: "none",
                 background: "transparent",
-                border: "none",
+                border: "1px solid var(--border)",
+                borderRadius: "8px",
                 cursor: "pointer",
-                padding: "4px",
+                padding: "8px",
+                lineHeight: 0,
               }}
               className="show-mobile"
               aria-label="Toggle menu"
             >
-              <div style={{ width: "22px", height: "2px", background: "var(--navy)", marginBottom: "5px", transition: "all 200ms" }} />
-              <div style={{ width: "22px", height: "2px", background: "var(--navy)", marginBottom: "5px" }} />
-              <div style={{ width: "22px", height: "2px", background: "var(--navy)" }} />
+              {open ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" strokeWidth="2" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" strokeWidth="2" strokeLinecap="round">
+                  <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+              )}
             </button>
           </div>
         </div>
@@ -152,7 +160,7 @@ export function Navbar() {
             style={{
               borderTop: "1px solid var(--border)",
               background: "#fff",
-              padding: "12px 24px 20px",
+              padding: "8px 16px 16px",
             }}
           >
             {navLinks.map((link) => (
@@ -161,11 +169,12 @@ export function Navbar() {
                 href={link.href}
                 onClick={() => setOpen(false)}
                 style={{
-                  display: "block",
-                  padding: "10px 0",
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "12px 0",
                   fontSize: "15px",
-                  fontWeight: 500,
-                  color: "var(--navy)",
+                  fontWeight: pathname === link.href ? 700 : 500,
+                  color: pathname === link.href ? "var(--primary)" : "var(--navy)",
                   textDecoration: "none",
                   borderBottom: "1px solid var(--border)",
                 }}
@@ -173,6 +182,14 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              href="/quote"
+              onClick={() => setOpen(false)}
+              className="ui-btn ui-btn-primary"
+              style={{ marginTop: "14px", width: "100%", justifyContent: "center" }}
+            >
+              Get an Instant Quote →
+            </Link>
           </div>
         )}
       </header>

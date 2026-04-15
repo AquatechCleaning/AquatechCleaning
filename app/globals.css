@@ -38,7 +38,7 @@
 
 /* ─── Base ──────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 body {
   background: var(--background);
   color: var(--foreground);
@@ -46,8 +46,27 @@ body {
   font-size: 16px;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 a, button, input, select, textarea { transition: all 180ms ease; }
+
+/* Google Places autocomplete dropdown */
+.pac-container {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-body);
+  font-size: 13px;
+  margin-top: 4px;
+  overflow: hidden;
+  z-index: 9999;
+}
+.pac-container:empty { display: none; }
+.pac-item { padding: 8px 12px; cursor: pointer; }
+.pac-item:hover { background: var(--surface-2); }
+.pac-item-query { font-size: 13px; color: var(--navy); }
+.pac-matched { font-weight: 700; }
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
 img { display: block; max-width: 100%; }
 
@@ -211,4 +230,72 @@ img { display: block; max-width: 100%; }
 @keyframes float-soft {
   0%,100% { transform: translateY(0); }
   50%     { transform: translateY(-8px); }
+}
+
+/* ─── Responsive Grid Utilities ─────────────────────────── */
+.rsp-grid-2       { display: grid; grid-template-columns: 1fr 1fr; }
+.rsp-grid-contact { display: grid; grid-template-columns: 1.2fr 0.8fr; }
+.rsp-grid-quote   { display: grid; grid-template-columns: 1fr 380px; }
+.rsp-grid-footer  { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; }
+.rsp-grid-form-2  { display: grid; grid-template-columns: 1fr 1fr; }
+
+/* All grid children must not overflow their cell */
+.rsp-grid-2 > *,
+.rsp-grid-contact > *,
+.rsp-grid-quote > *,
+.rsp-grid-footer > *,
+.rsp-grid-form-2 > * { min-width: 0; }
+
+/* ─── Mobile ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  .ui-container { padding-inline: 1rem; }
+  .ui-section   { padding-block: 2.5rem !important; }
+
+  /* ── Responsive grids → single column ── */
+  .rsp-grid-2,
+  .rsp-grid-contact,
+  .rsp-grid-quote,
+  .rsp-grid-footer,
+  .rsp-grid-form-2 { grid-template-columns: 1fr; }
+
+  /* ── Section & page padding ── */
+  .sec       { padding: 2.5rem 0 !important; }
+  .page-hero { padding: 36px 0 48px !important; }
+  .pg-body   { padding: 2rem 1rem !important; }
+
+  /* ── Hero banner ── */
+  .hero-section { padding: 48px 0 64px !important; min-height: auto !important; }
+  .hero-logo-bg { display: none !important; }
+  .hero-actions { flex-direction: column !important; }
+  .hero-actions .ui-btn { width: 100% !important; justify-content: center !important; }
+
+  /* ── Navbar top bar ── */
+  .topbar-email { display: none !important; }
+  .topbar-sep   { display: none !important; }
+  .topbar-hours { display: none !important; }
+  /* Hide duplicate CTA in header — accessible via hamburger menu */
+  .nav-cta      { display: none !important; }
+
+  /* ── Stats block — 2×2 grid ── */
+  .stats-grid   { grid-template-columns: 1fr 1fr !important; }
+
+  /* ── Inputs — prevent iOS auto-zoom (needs ≥16px) ── */
+  input, select, textarea, .ui-input { font-size: 16px !important; }
+
+  /* ── Quote page ── */
+  .map-rsp { height: 260px !important; width: 100% !important; }
+  /* Pills wrap on mobile */
+  .pills-rsp { flex-wrap: wrap !important; gap: 6px !important; }
+  .pills-rsp button { padding: 6px 10px !important; font-size: 11px !important; }
+
+  /* ── Footer CTA strip ── */
+  .footer-cta-inner { flex-direction: column !important; text-align: center; }
+
+  /* ── Footer ── */
+  .rsp-grid-footer { gap: 28px; margin-bottom: 28px !important; }
+
+  /* ── Admin ── */
+  .admin-sidebar { display: none; }
+  .admin-main    { padding: 1rem; }
 }
