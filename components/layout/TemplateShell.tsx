@@ -12,6 +12,7 @@ function WhatsAppFAB() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat on WhatsApp"
+      className="whatsapp-fab"
       style={{
         position: "fixed",
         bottom: "24px",

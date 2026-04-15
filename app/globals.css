@@ -289,11 +289,29 @@ img { display: block; max-width: 100%; }
   .pills-rsp { flex-wrap: wrap !important; gap: 6px !important; }
   .pills-rsp button { padding: 6px 10px !important; font-size: 11px !important; }
 
+  /* ── Grid gap overrides (inline styles use large gaps, crush them on mobile) ── */
+  .rsp-grid-2       { gap: 24px !important; }
+  .rsp-grid-contact { gap: 20px !important; }
+  .rsp-grid-quote   { gap: 16px !important; }
+
+  /* ── Gallery section header — stack title + button vertically ── */
+  .section-flex-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
   /* ── Footer CTA strip ── */
   .footer-cta-inner { flex-direction: column !important; text-align: center; }
 
   /* ── Footer ── */
   .rsp-grid-footer { gap: 28px; margin-bottom: 28px !important; }
+
+  /* ── Cards — reduce padding on mobile ── */
+  .ui-card { border-radius: var(--r-md); }
+
+  /* ── WhatsApp FAB — keep above mobile browser chrome ── */
+  .whatsapp-fab { bottom: 80px !important; }
 
   /* ── Admin ── */
   .admin-sidebar { display: none; }

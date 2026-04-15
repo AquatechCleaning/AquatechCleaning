@@ -204,7 +204,7 @@ export default async function Home() {
       {media.length > 0 && (
         <section className="sec" style={{ background: "var(--bg)", padding: "80px 0" }}>
           <div className="ui-container">
-            <div className="ui-section-header reveal-up" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+            <div className="ui-section-header section-flex-header reveal-up" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
               <div>
                 <p className="ui-kicker">Our Work</p>
                 <h2 className="ui-title" style={{ marginTop: "8px" }}>Recent transformations</h2>
