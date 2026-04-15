@@ -56,9 +56,36 @@ const services = [
   },
 ];
 
+const servicesSchema = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Aquatech Cleaning Services",
+  "description": "Professional exterior cleaning services in Cape Town and the Western Cape",
+  "itemListElement": services.map((s, i) => ({
+    "@type": "ListItem",
+    "position": i + 1,
+    "item": {
+      "@type": "Service",
+      "@id": `https://aquatechcleaning.co.za/services#${s.id}`,
+      "name": s.title,
+      "description": s.description,
+      "provider": {
+        "@type": "LocalBusiness",
+        "@id": "https://aquatechcleaning.co.za/#business",
+        "name": "Aquatech Cleaning",
+      },
+      "areaServed": {
+        "@type": "AdministrativeArea",
+        "name": "Cape Town, Western Cape, South Africa",
+      },
+    },
+  })),
+};
+
 export default function ServicesPage() {
   return (
     <div style={{ background: "var(--bg)" }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(servicesSchema) }} />
       {/* Header */}
       <div className="page-hero" style={{ background: "var(--navy)", padding: "64px 0 80px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "48px 48px", pointerEvents: "none" }} />

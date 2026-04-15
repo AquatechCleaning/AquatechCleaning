@@ -7,8 +7,15 @@ import { Property } from "@/lib/models/Property";
 import { Quote } from "@/lib/models/Quote";
 import { SiteSettings } from "@/lib/models/SiteSettings";
 import { QuoteSequence } from "@/lib/models/QuoteSequence";
+import { rateLimit, getIP } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
+  // 10 quote submissions per IP per 5 minutes
+  const { allowed } = rateLimit(getIP(request), { limit: 10, windowMs: 5 * 60_000 });
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests. Please try again shortly." }, { status: 429 });
+  }
+
   try {
     const body = await request.json();
     const parsed = quoteSchema.parse(body);

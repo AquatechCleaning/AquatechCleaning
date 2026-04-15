@@ -63,6 +63,78 @@ const processSteps = [
   { step: "04", title: "Spotless results", body: "Fully insured crews, detailed after-photos, and a satisfaction guarantee on every job." },
 ];
 
+const localBusinessSchema = {
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "@id": "https://aquatechcleaning.co.za/#business",
+  "name": "Aquatech Cleaning",
+  "description": "Professional exterior cleaning for roofs, driveways, solar panels, windows, gutters and decks across Cape Town and the Western Cape.",
+  "url": "https://aquatechcleaning.co.za",
+  "telephone": "+27716289947",
+  "email": "aston@aquatechcleaning.co.za",
+  "priceRange": "$$",
+  "currenciesAccepted": "ZAR",
+  "paymentAccepted": "Cash, EFT, Bank Transfer",
+  "image": "https://aquatechcleaning.co.za/Logo.png",
+  "logo": "https://aquatechcleaning.co.za/Logo.png",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Cape Town",
+    "addressRegion": "Western Cape",
+    "addressCountry": "ZA"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": -33.9249,
+    "longitude": 18.4241
+  },
+  "areaServed": [
+    { "@type": "City", "name": "Cape Town" },
+    { "@type": "City", "name": "Stellenbosch" },
+    { "@type": "City", "name": "Paarl" },
+    { "@type": "City", "name": "Franschhoek" },
+    { "@type": "City", "name": "Somerset West" },
+    { "@type": "City", "name": "Grabouw" },
+    { "@type": "Place", "name": "Atlantic Seaboard" },
+    { "@type": "Place", "name": "Southern Suburbs" },
+    { "@type": "Place", "name": "Northern Suburbs" },
+    { "@type": "Place", "name": "False Bay" },
+    { "@type": "Place", "name": "Yzerfontein" },
+    { "@type": "Place", "name": "Langebaan" }
+  ],
+  "openingHoursSpecification": [
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
+      "opens": "07:00",
+      "closes": "18:00"
+    }
+  ],
+  "sameAs": [
+    "https://www.facebook.com/share/17mqi6RrNs/",
+    "https://www.instagram.com/more.aquatech.cleaning"
+  ],
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "Exterior Cleaning Services",
+    "itemListElement": [
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Roof Cleaning" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Gutter Cleaning" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Solar Panel Cleaning" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Window Cleaning" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Driveway & Paving Cleaning" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Deck & Wood Cleaning" } }
+    ]
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "5.0",
+    "bestRating": "5",
+    "worstRating": "1",
+    "ratingCount": "85"
+  }
+};
+
 export default async function Home() {
   const [stats, testimonials, media] = await Promise.all([getStats(), getTestimonials(), getMedia()]);
 
@@ -75,6 +147,10 @@ export default async function Home() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+      />
       <HeroBanner />
 
       {/* Stats */}

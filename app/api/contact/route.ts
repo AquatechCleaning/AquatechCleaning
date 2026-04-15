@@ -3,8 +3,15 @@ import { dbConnect } from "@/lib/db";
 import { Lead } from "@/lib/models/Lead";
 import { contactSchema } from "@/lib/validators";
 import { sendEmailStub } from "@/lib/email";
+import { rateLimit, getIP } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
+  // 5 submissions per IP per minute
+  const { allowed } = rateLimit(getIP(request), { limit: 5, windowMs: 60_000 });
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests. Please try again shortly." }, { status: 429 });
+  }
+
   try {
     const json = await request.json();
     const parsed = contactSchema.parse(json);
