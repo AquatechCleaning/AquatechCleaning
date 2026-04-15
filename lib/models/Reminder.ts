@@ -4,7 +4,7 @@ export interface IReminder extends Document {
   customerId: Types.ObjectId;
   jobId: Types.ObjectId;
   dueDate: Date;
-  status: "Pending" | "Sent" | "Snoozed" | "Cancelled";
+  status: "Pending" | "Sent" | "Snoozed" | "Cancelled" | "Completed";
   channel: "email";
   lastSentAt?: Date;
 }
@@ -16,7 +16,7 @@ const ReminderSchema = new Schema<IReminder>(
     dueDate: { type: Date, required: true },
     status: {
       type: String,
-      enum: ["Pending", "Sent", "Snoozed", "Cancelled"],
+      enum: ["Pending", "Sent", "Snoozed", "Cancelled", "Completed"],
       default: "Pending",
     },
     channel: { type: String, enum: ["email"], default: "email" },

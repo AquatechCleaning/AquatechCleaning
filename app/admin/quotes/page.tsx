@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { formatCurrency } from "@/lib/format";
+import { ScheduleQuoteForm } from "./ScheduleQuoteForm";
 
 async function getQuotes() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/admin/quotes`, { cache: "no-store" });
@@ -11,7 +12,9 @@ function StatusBadge({ status }: { status: string }) {
     Pending: "ui-badge-pending",
     Sent: "ui-badge-sent",
     Accepted: "ui-badge-accepted",
+    Scheduled: "ui-badge-scheduled",
     Declined: "ui-badge-declined",
+    "Callback Requested": "ui-badge-sent",
     Expired: "ui-badge-expired",
   };
   return (
@@ -45,7 +48,7 @@ export default async function QuotesPage() {
 
       {/* Summary counts */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "20px", flexWrap: "wrap" }}>
-        {["All", "Pending", "Sent", "Accepted", "Declined"].map((s) => {
+        {["All", "Pending", "Sent", "Accepted", "Scheduled", "Declined", "Callback Requested"].map((s) => {
           const count = s === "All" ? quotes.length : quotes.filter((q: any) => q.status === s).length;
           return (
             <div
@@ -129,7 +132,7 @@ export default async function QuotesPage() {
                     </div>
                   </td>
                   <td style={{ fontWeight: 700, color: "var(--navy)" }}>
-                    R{quote.totalAmount?.toLocaleString() ?? "—"}
+                    {typeof quote.totalAmount === "number" ? formatCurrency(quote.totalAmount) : "—"}
                   </td>
                   <td>
                     <StatusBadge status={quote.status} />
@@ -138,7 +141,7 @@ export default async function QuotesPage() {
                     {quote.createdAt ? new Date(quote.createdAt).toLocaleDateString("en-ZA") : "—"}
                   </td>
                   <td>
-                    <div style={{ display: "flex", gap: "6px" }}>
+                    <div style={{ display: "flex", gap: "6px", alignItems: "flex-start" }}>
                       <a
                         href={`/api/quotes/pdf/${quote._id}`}
                         target="_blank"
@@ -155,26 +158,7 @@ export default async function QuotesPage() {
                       >
                         PDF
                       </a>
-                      {quote.status === "Pending" || quote.status === "Sent" ? (
-                        <form action={`/api/quotes/accept`} method="POST" style={{ display: "inline" }}>
-                          <input type="hidden" name="quoteId" value={quote._id} />
-                          <button
-                            type="submit"
-                            style={{
-                              padding: "5px 10px",
-                              borderRadius: "6px",
-                              fontSize: "11px",
-                              fontWeight: 600,
-                              border: "none",
-                              background: "var(--primary)",
-                              color: "#fff",
-                              cursor: "pointer",
-                            }}
-                          >
-                            Accept
-                          </button>
-                        </form>
-                      ) : null}
+                      {quote.status === "Accepted" ? <ScheduleQuoteForm quoteId={quote._id} /> : null}
                     </div>
                   </td>
                 </tr>

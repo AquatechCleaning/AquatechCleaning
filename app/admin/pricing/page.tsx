@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@/lib/format";
 import { useEffect, useState } from "react";
 
 type PricingSettings = { rates: Record<string, number>; minimumFee: number; vatIncluded: boolean; vatRate: number };
@@ -131,17 +132,17 @@ export default function PricingPage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
                     <span style={{ color: "#0c4a6e" }}>100 × R{rate}/m²</span>
-                    <span style={{ fontWeight: 600, color: "#0c4a6e" }}>R{(100 * rate).toLocaleString()}</span>
+                    <span style={{ fontWeight: 600, color: "#0c4a6e" }}>{formatCurrency(100 * rate, { decimals: 0 })}</span>
                   </div>
                   {pricing.vatIncluded && (
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
                       <span style={{ color: "#0c4a6e" }}>VAT ({(pricing.vatRate * 100).toFixed(0)}%)</span>
-                      <span style={{ fontWeight: 600, color: "#0c4a6e" }}>R{vat.toLocaleString()}</span>
+                      <span style={{ fontWeight: 600, color: "#0c4a6e" }}>{formatCurrency(vat, { decimals: 0 })}</span>
                     </div>
                   )}
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", fontWeight: 700, borderTop: "1px solid #BAE6FD", paddingTop: "6px", marginTop: "4px" }}>
                     <span style={{ color: "#0c4a6e" }}>Total</span>
-                    <span style={{ color: "#0c4a6e" }}>R{(subtotal + vat).toLocaleString()}</span>
+                    <span style={{ color: "#0c4a6e" }}>{formatCurrency(subtotal + vat, { decimals: 0 })}</span>
                   </div>
                 </div>
               );

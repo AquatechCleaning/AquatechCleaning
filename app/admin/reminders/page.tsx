@@ -1,5 +1,6 @@
 "use client";
 
+import { CompleteReminderButton } from "./CompleteReminderButton";
 import { useEffect, useState } from "react";
 
 type Reminder = { _id: string; dueDate: string; status: string; jobId: string; customerId: string };
@@ -28,6 +29,7 @@ export default function RemindersPage() {
     Sent: "ui-badge-sent",
     Snoozed: "ui-badge-scheduled",
     Cancelled: "ui-badge-declined",
+    Completed: "ui-badge-completed",
   };
 
   return (
@@ -56,6 +58,7 @@ export default function RemindersPage() {
               <th>Status</th>
               <th>Job</th>
               <th>Customer</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -76,11 +79,31 @@ export default function RemindersPage() {
                 <td style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--text-muted)" }}>
                   #{String(r.customerId).slice(-8)}
                 </td>
+                <td>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <a
+                      href={`/admin/jobs/${r.jobId}`}
+                      style={{
+                        border: "1px solid var(--border)",
+                        borderRadius: "6px",
+                        color: "var(--navy)",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        padding: "6px 10px",
+                        textDecoration: "none",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      View Previous Job
+                    </a>
+                    {r.status !== "Completed" ? <CompleteReminderButton reminderId={r._id} /> : null}
+                  </div>
+                </td>
               </tr>
             ))}
             {reminders.length === 0 && (
               <tr>
-                <td colSpan={4} style={{ textAlign: "center", padding: "48px", color: "var(--text-muted)", fontSize: "13px" }}>
+                <td colSpan={5} style={{ textAlign: "center", padding: "48px", color: "var(--text-muted)", fontSize: "13px" }}>
                   No reminders yet. They&apos;re created automatically after jobs are completed.
                 </td>
               </tr>

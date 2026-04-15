@@ -67,6 +67,7 @@ export async function GET(req: Request, { params }: Params) {
         : `${customer.name} ${customer.surname ?? ""}`.trim()
       : "Customer";
     const companyName = settings?.companyName || "AQUATECH CLEANING (PTY) LTD";
+    const companyAddress = "Constantia\nCape Town\nSouth Africa";
     const quoteNumber = quote.quoteNumber || `QU-${quote._id.toString().slice(-6).toUpperCase()}`;
     const dueDate = quote.dueDate ? new Date(quote.dueDate) : new Date(quote.createdAt.getTime() + 3 * 86400000);
 
@@ -80,8 +81,8 @@ export async function GET(req: Request, { params }: Params) {
         name: companyName,
         vatNumber: settings?.companyVatNumber,
         regNumber: settings?.companyRegNumber,
-        postalAddress: settings?.companyPostalAddress,
-        physicalAddress: settings?.companyPhysicalAddress,
+        postalAddress: settings?.companyPostalAddress || companyAddress,
+        physicalAddress: settings?.companyPhysicalAddress || companyAddress,
       },
       to: {
         name: customerName,

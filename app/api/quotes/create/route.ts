@@ -9,6 +9,44 @@ import { SiteSettings } from "@/lib/models/SiteSettings";
 import { QuoteSequence } from "@/lib/models/QuoteSequence";
 import { rateLimit, getIP } from "@/lib/rateLimit";
 
+const formatMapPath = (path?: Array<{ lat: number; lng: number }>, shape?: "polygon" | "polyline" | "manual") => {
+  if (!path || path.length < 2 || shape === "manual") return undefined;
+
+  const points = shape === "polygon" ? [...path, path[0]] : path;
+  const style =
+    shape === "polygon"
+      ? "color:0x005C84ff|weight:3|fillcolor:0xF2B23355"
+      : "color:0xF2B233ff|weight:5";
+
+  return `${style}|${points.map((point) => `${point.lat},${point.lng}`).join("|")}`;
+};
+
+const buildMapImageUrl = (
+  coordinates?: { lat: number; lng: number } | null,
+  areas: Array<{ path?: Array<{ lat: number; lng: number }>; shape?: "polygon" | "polyline" | "manual" }> = []
+) => {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey || !coordinates) return undefined;
+
+  const position = `${coordinates.lat},${coordinates.lng}`;
+  const params = new URLSearchParams({
+    center: position,
+    zoom: "19",
+    size: "640x360",
+    scale: "2",
+    maptype: "satellite",
+    markers: `color:blue|${position}`,
+    key: apiKey,
+  });
+
+  areas
+    .map((area) => formatMapPath(area.path, area.shape))
+    .filter((path): path is string => Boolean(path))
+    .forEach((path) => params.append("path", path));
+
+  return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
+};
+
 export async function POST(request: Request) {
   // 10 quote submissions per IP per 5 minutes
   const { allowed } = rateLimit(getIP(request), { limit: 10, windowMs: 5 * 60_000 });
@@ -107,6 +145,7 @@ export async function POST(request: Request) {
       currency: "ZAR",
       leadSource: "Website Self-Quote",
       geo: coordinates,
+      mapImageUrl: buildMapImageUrl(coordinates, parsed.areas),
       quoteNumber,
       reference: quoteNumber,
       dueDate,
@@ -122,8 +161,14 @@ export async function POST(request: Request) {
       vatRate: pricing.vatRate,
       vatAmount: pricing.vatAmount,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
+    // Surface Zod validation errors as readable field messages
+    if (error?.name === "ZodError" || error?.issues) {
+      const issues = error.issues ?? [];
+      const details = issues.map((i: any) => `${i.path.join(".")}: ${i.message}`).join("; ");
+      return NextResponse.json({ error: "Validation failed", details: details || "Invalid input" }, { status: 400 });
+    }
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: "Unable to create quote", details: message }, { status: 400 });
   }

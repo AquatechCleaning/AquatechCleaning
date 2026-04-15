@@ -1,3 +1,5 @@
+import { CompleteJobButton } from "./CompleteJobButton";
+
 async function getJobs() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/admin/jobs`, { cache: "no-store" });
   if (!res.ok) return [];
@@ -45,6 +47,7 @@ export default async function JobsPage() {
                 <th>Status</th>
                 <th>Scheduled</th>
                 <th>Completed</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -60,17 +63,25 @@ export default async function JobsPage() {
                   </td>
                   <td><StatusBadge status={job.status} /></td>
                   <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                    {job.scheduledDate ? new Date(job.scheduledDate).toLocaleDateString("en-ZA") : "—"}
+                    {job.scheduledDate
+                      ? new Date(job.scheduledDate).toLocaleString("en-ZA", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })
+                      : "—"}
                   </td>
                   <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
                     {job.completedDate ? new Date(job.completedDate).toLocaleDateString("en-ZA") : "—"}
+                  </td>
+                  <td>
+                    {job.status === "Scheduled" ? <CompleteJobButton jobId={job._id} /> : null}
                   </td>
                 </tr>
               ))}
               {jobs.length === 0 && (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: "center", padding: "48px", color: "var(--text-muted)", fontSize: "13px" }}>
-                    No jobs yet. Jobs are created when quotes are accepted.
+                  <td colSpan={6} style={{ textAlign: "center", padding: "48px", color: "var(--text-muted)", fontSize: "13px" }}>
+                    No jobs yet. Jobs appear here once accepted quotes are scheduled.
                   </td>
                 </tr>
               )}

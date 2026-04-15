@@ -1,3 +1,5 @@
+import { formatCurrency } from "@/lib/format";
+
 async function getSummary() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/admin/analytics`, { cache: "no-store" });
   if (!res.ok) return null;
@@ -11,7 +13,7 @@ export default async function AdminDashboard() {
   const kpis = [
     { label: "Quotes This Month", value: summary.quotesThisMonth, format: (v: number) => v.toString(), accent: "var(--primary)" },
     { label: "Conversion Rate", value: summary.conversionRate, format: (v: number) => `${v}%`, accent: "var(--accent)" },
-    { label: "Revenue (MTD)", value: summary.revenue, format: (v: number) => `R${v.toLocaleString()}`, accent: "#22c55e" },
+    { label: "Revenue (MTD)", value: summary.revenue, format: (v: number) => formatCurrency(v, { decimals: 0 }), accent: "#22c55e" },
     { label: "Repeat Rate", value: summary.repeatRate, format: (v: number) => `${v}%`, accent: "#8b5cf6" },
   ];
 

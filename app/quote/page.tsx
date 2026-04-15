@@ -2,9 +2,11 @@
 
 import { useMemo, useRef, useState } from "react";
 import { GoogleMap, useJsApiLoader, DrawingManager, Autocomplete, Polyline } from "@react-google-maps/api";
+import { formatCurrency } from "@/lib/format";
 
 type AreaType = "roof" | "gutters" | "driveway" | "tiles" | "wall" | "house_wash" | "miscellaneous" | "windows" | "solar_panels";
-type AreaEntry = { id: string; type: AreaType; sqm: number; details?: string };
+type ShapePoint = { lat: number; lng: number };
+type AreaEntry = { id: string; type: AreaType; sqm: number; details?: string; path?: ShapePoint[]; shape?: "polygon" | "polyline" | "manual" };
 type MeasuredArea = AreaEntry & { perimeter?: number };
 type QuoteResult = { quoteId: string; quoteNumber?: string; totalAmount: number; lineItems: any[]; vatIncluded?: boolean; vatRate?: number; vatAmount?: number };
 
@@ -41,6 +43,10 @@ export default function QuotePage() {
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [quoteStatus, setQuoteStatus] = useState<"idle" | "success" | "error">("idle");
   const [quoteMessage, setQuoteMessage] = useState("");
+  const [quoteActionStatus, setQuoteActionStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [quoteActionMessage, setQuoteActionMessage] = useState("");
+  const [quoteActionComplete, setQuoteActionComplete] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
 
   const [roofStoreys, setRoofStoreys] = useState("single");
   const [gutterStoreys, setGutterStoreys] = useState("single");
@@ -91,7 +97,8 @@ export default function QuotePage() {
     const path = polygon.getPath();
     const sqm = Math.round(google.maps.geometry.spherical.computeArea(path));
     const { details, overrideValue } = buildDetails();
-    const entry: MeasuredArea = { id: crypto.randomUUID(), type: activeType, sqm: overrideValue ?? sqm, details };
+    const points: ShapePoint[] = path.getArray().map((point) => ({ lat: point.lat(), lng: point.lng() }));
+    const entry: MeasuredArea = { id: crypto.randomUUID(), type: activeType, sqm: overrideValue ?? sqm, details, path: points, shape: "polygon" };
     setAreas((prev) => [...prev, entry]);
     drawnShapesRef.current.push(polygon);
     setIsMeasuring(false);
@@ -104,7 +111,8 @@ export default function QuotePage() {
       length += google.maps.geometry.spherical.computeDistanceBetween(path.getAt(i), path.getAt(i + 1));
     }
     const { details, overrideValue } = buildDetails();
-    const entry: MeasuredArea = { id: crypto.randomUUID(), type: activeType, sqm: overrideValue ?? Math.round(length), perimeter: Math.round(length), details };
+    const points: ShapePoint[] = path.getArray().map((point) => ({ lat: point.lat(), lng: point.lng() }));
+    const entry: MeasuredArea = { id: crypto.randomUUID(), type: activeType, sqm: overrideValue ?? Math.round(length), perimeter: Math.round(length), details, path: points, shape: "polyline" };
     setAreas((prev) => [...prev, entry]);
     drawnShapesRef.current.push(polyline);
     setIsMeasuring(false);
@@ -114,7 +122,7 @@ export default function QuotePage() {
     const val = Number(manualSqm);
     if (!val || val <= 0) return;
     const { details } = buildDetails();
-    setAreas((prev) => [...prev, { id: crypto.randomUUID(), type: activeType, sqm: val, details }]);
+    setAreas((prev) => [...prev, { id: crypto.randomUUID(), type: activeType, sqm: val, details, shape: "manual" }]);
     setManualSqm("");
   };
 
@@ -122,28 +130,37 @@ export default function QuotePage() {
 
   const submitQuote = async () => {
     if (areas.length === 0) { setQuoteStatus("error"); setQuoteMessage("Please add at least one area."); return; }
-    if (!form.name || !form.surname || !form.email || !form.phone) { setQuoteStatus("error"); setQuoteMessage("Please fill in all required contact fields."); return; }
+    if (!form.name || form.name.trim().length < 2) { setQuoteStatus("error"); setQuoteMessage("Please enter your first name (at least 2 characters)."); return; }
+    if (!form.surname || form.surname.trim().length < 2) { setQuoteStatus("error"); setQuoteMessage("Please enter your last name (at least 2 characters)."); return; }
+    if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setQuoteStatus("error"); setQuoteMessage("Please enter a valid email address."); return; }
+    if (!form.phone || form.phone.trim().length < 6) { setQuoteStatus("error"); setQuoteMessage("Please enter a valid phone number."); return; }
+    if (form.propertyType === "commercial" && !form.companyName?.trim()) { setQuoteStatus("error"); setQuoteMessage("Please enter your company name for commercial quotes."); return; }
 
     setQuoteStatus("idle");
     setQuoteMessage("");
 
     const payload = {
       ...form,
-      address: address || "Not specified",
+      name: form.name.trim(),
+      surname: form.surname.trim(),
+      address: address?.trim() || "Not specified",
       coordinates,
-      areas: areas.map((a) => ({ type: a.type, sqm: a.sqm, details: a.details })),
+      areas: areas.map((a) => ({ type: a.type, sqm: a.sqm, details: a.details, path: a.path, shape: a.shape })),
     };
 
     try {
       const res = await fetch("/api/quotes/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
+      if (!res.ok) {
+        const detail = data.details || data.error || "Failed to submit quote.";
+        throw new Error(detail);
+      }
       setQuoteResult(data);
       setQuoteStatus("success");
       setQuoteMessage(`Quote #${data.quoteNumber ?? data.quoteId} submitted!`);
     } catch (e: any) {
       setQuoteStatus("error");
-      setQuoteMessage(e.message ?? "Something went wrong.");
+      setQuoteMessage(e.message ?? "Something went wrong. Please try again.");
     }
   };
 
@@ -174,22 +191,62 @@ export default function QuotePage() {
     marginBottom: "4px",
   };
 
+  const handleQuoteAction = async (action: "accept" | "decline" | "callback") => {
+    if (!quoteResult?.quoteId) return;
+
+    setQuoteActionStatus("loading");
+    setQuoteActionMessage("");
+
+    const endpoint =
+      action === "accept"
+        ? "/api/quotes/accept"
+        : action === "decline"
+          ? "/api/quotes/decline"
+          : "/api/quotes/callback";
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quoteId: quoteResult.quoteId,
+          ...(action === "decline" ? { reason: declineReason.trim() || undefined } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to update quote.");
+
+      setQuoteActionComplete(true);
+      setQuoteActionStatus("success");
+      setQuoteActionMessage(
+        action === "accept"
+          ? "Quote accepted. We will contact you to confirm scheduling."
+          : action === "decline"
+            ? "Quote declined. Thank you for letting us know."
+            : "Callback requested. We will contact you shortly."
+      );
+    } catch (e: any) {
+      setQuoteActionStatus("error");
+      setQuoteActionMessage(e.message ?? "Unable to update quote. Please try again.");
+    }
+  };
+
   if (quoteStatus === "success" && quoteResult) {
     return (
       <div style={{ background: "var(--bg)", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
-        <div className="ui-card reveal-up" style={{ padding: "48px", maxWidth: "520px", width: "100%", textAlign: "center" }}>
+        <div className="ui-card reveal-up" style={{ padding: "48px", maxWidth: "620px", width: "100%", textAlign: "center" }}>
           <div style={{ fontSize: "56px", marginBottom: "20px" }}>✅</div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 800, color: "var(--navy)", marginBottom: "10px" }}>
-            Quote Submitted!
+            Quote Ready
           </h1>
           <p style={{ color: "var(--text-muted)", fontSize: "14px", lineHeight: 1.7, marginBottom: "28px" }}>
-            Your quote #{quoteResult.quoteNumber ?? quoteResult.quoteId} has been received. We&apos;ll review and get back to you within 1 business day.
+            Review quote #{quoteResult.quoteNumber ?? quoteResult.quoteId}, then accept, decline, request a call back, or download a copy.
           </p>
           <div style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "12px", padding: "20px", marginBottom: "28px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>Estimated Total</span>
               <span style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 800, color: "var(--primary)" }}>
-                R{quoteResult.totalAmount.toLocaleString()}
+                {formatCurrency(quoteResult.totalAmount)}
               </span>
             </div>
             {quoteResult.vatIncluded && (
@@ -198,7 +255,60 @@ export default function QuotePage() {
               </p>
             )}
           </div>
-          <a href="/" className="ui-btn ui-btn-primary" style={{ display: "block", marginBottom: "10px" }}>← Back to Home</a>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+            <button
+              className="ui-btn ui-btn-primary"
+              onClick={() => handleQuoteAction("accept")}
+              disabled={quoteActionStatus === "loading" || quoteActionComplete}
+            >
+              Accept Quote
+            </button>
+            <button
+              className="ui-btn ui-btn-ghost"
+              onClick={() => handleQuoteAction("decline")}
+              disabled={quoteActionStatus === "loading" || quoteActionComplete}
+            >
+              Decline Quote
+            </button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "14px" }}>
+            <button
+              className="ui-btn ui-btn-secondary"
+              onClick={() => handleQuoteAction("callback")}
+              disabled={quoteActionStatus === "loading" || quoteActionComplete}
+            >
+              Request Call Back
+            </button>
+            <a
+              href={`/api/quotes/pdf/${quoteResult.quoteId}`}
+              className="ui-btn ui-btn-ghost"
+              style={{ display: "block", textDecoration: "none" }}
+            >
+              Download Quote
+            </a>
+          </div>
+          <textarea
+            style={{ ...inputStyle, resize: "vertical", marginBottom: "12px" }}
+            rows={2}
+            placeholder="Optional reason if declining"
+            value={declineReason}
+            onChange={(e) => setDeclineReason(e.target.value)}
+          />
+          {quoteActionMessage && (
+            <div
+              style={{
+                background: quoteActionStatus === "error" ? "#FEE2E2" : "#ECFDF5",
+                border: `1px solid ${quoteActionStatus === "error" ? "#FECACA" : "#A7F3D0"}`,
+                borderRadius: "8px",
+                color: quoteActionStatus === "error" ? "#991b1b" : "#065F46",
+                fontSize: "12px",
+                marginBottom: "12px",
+                padding: "10px 14px",
+              }}
+            >
+              {quoteActionMessage}
+            </div>
+          )}
           <a href="/quote" className="ui-btn ui-btn-ghost" style={{ display: "block" }}>Submit Another Quote</a>
         </div>
       </div>

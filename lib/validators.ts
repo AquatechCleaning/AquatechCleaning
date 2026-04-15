@@ -16,6 +16,15 @@ export const areaSchema = z.object({
   ]),
   sqm: z.number().positive(),
   details: z.string().optional(),
+  path: z
+    .array(
+      z.object({
+        lat: z.number(),
+        lng: z.number(),
+      })
+    )
+    .optional(),
+  shape: z.enum(["polygon", "polyline", "manual"]).optional(),
 });
 
 export const quoteSchema = z.object({

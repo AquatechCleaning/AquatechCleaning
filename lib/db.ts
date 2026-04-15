@@ -8,11 +8,17 @@ if (!mongoUri) {
 
 const requiredMongoUri: string = mongoUri;
 
-let cached = (global as any)._mongoose;
+type MongooseCache = {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+};
 
-if (!cached) {
-  cached = (global as any)._mongoose = { conn: null, promise: null };
-}
+const globalWithMongoose = globalThis as typeof globalThis & {
+  _mongoose?: MongooseCache;
+};
+
+const cached: MongooseCache = globalWithMongoose._mongoose ?? { conn: null, promise: null };
+globalWithMongoose._mongoose = cached;
 
 export async function dbConnect() {
   if (cached.conn) {
@@ -23,8 +29,13 @@ export async function dbConnect() {
     cached.promise = mongoose
       .connect(requiredMongoUri, {
         bufferCommands: false,
+        serverSelectionTimeoutMS: 10000,
       })
-      .then((mongooseInstance) => mongooseInstance);
+      .then((mongooseInstance) => mongooseInstance)
+      .catch((error) => {
+        cached.promise = null;
+        throw error;
+      });
   }
 
   cached.conn = await cached.promise;

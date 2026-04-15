@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import PDFDocument from "pdfkit";
+import { formatCurrency } from "./format";
 import { IQuote } from "./models/Quote";
 import { LineItem } from "./pricing";
 
@@ -26,7 +27,6 @@ const formatTypeLabel = (value: string) =>
     .replace(/_/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
-const formatCurrency = (value: number) => `R${value.toFixed(2)}`;
 const formatPercent = (value: number) => `${value.toFixed(2)}%`;
 const formatDate = (value: Date) => value.toLocaleDateString("en-ZA");
 
@@ -49,7 +49,21 @@ const formatAddressInline = (value?: string) => {
   return lines.join(", ");
 };
 
-export function generateQuotePdf({
+const fetchImageBuffer = async (url?: string) => {
+  if (!url) return null;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.startsWith("image/")) return null;
+    return Buffer.from(await response.arrayBuffer());
+  } catch {
+    return null;
+  }
+};
+
+export async function generateQuotePdf({
   quote,
   lineItems,
   vatIncluded = false,
@@ -70,6 +84,7 @@ export function generateQuotePdf({
   meta: QuoteMeta;
   logoPath?: string;
 }) {
+  const mapImageBuffer = await fetchImageBuffer(quote.mapImageUrl);
   const doc = new PDFDocument({ margin: 40, size: "A4" });
   const buffers: Uint8Array[] = [];
 
@@ -109,39 +124,6 @@ export function generateQuotePdf({
     ["OVERALL DISCOUNT %:", formatPercent(meta.discountPercent ?? 0)],
     ["PAGE:", "1/1"],
   ];
-  const companyDetailsStartY = margin + 60;
-  const companyDetailsLabelWidth = 110;
-  const companyDetailsValueWidth = 190;
-  let companyDetailsY = companyDetailsStartY;
-
-  doc.font("Helvetica-Bold").fontSize(9).fillColor("#6b7280").text("COMPANY DETAILS", margin, companyDetailsY);
-  companyDetailsY += 12;
-
-  const companyDetailsRows: Array<[string, string]> = [
-    ["Company name:", fallbackText(from.name)],
-    ["Company VAT number:", fallbackText(from.vatNumber, "-")],
-    ["Company registration number:", fallbackText(from.regNumber, "-")],
-    ["Company postal address:", formatAddressInline(from.postalAddress)],
-    ["Company physical address:", formatAddressInline(from.physicalAddress)],
-  ];
-
-  companyDetailsRows.forEach(([label, value]) => {
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(8)
-      .fillColor("#6b7280")
-      .text(label.toUpperCase(), margin, companyDetailsY, { width: companyDetailsLabelWidth });
-    doc
-      .font("Helvetica")
-      .fontSize(9)
-      .fillColor("#111827")
-      .text(value, margin + companyDetailsLabelWidth, companyDetailsY, { width: companyDetailsValueWidth });
-    const valueHeight = doc.heightOfString(value, { width: companyDetailsValueWidth });
-    companyDetailsY += Math.max(12, valueHeight) + 2;
-  });
-
-  const companyDetailsBottom = companyDetailsY;
-
   metaRows.forEach(([label, value], index) => {
     const y = metaStartY + metaRowHeight * index;
     doc.font("Helvetica").fontSize(9).fillColor("#6b7280").text(label, metaX, y);
@@ -151,7 +133,7 @@ export function generateQuotePdf({
     });
   });
 
-  const headerBottom = Math.max(margin + 120, metaStartY + metaRowHeight * metaRows.length, companyDetailsBottom) + 20;
+  const headerBottom = Math.max(margin + 115, metaStartY + metaRowHeight * metaRows.length) + 24;
   const columnGap = 30;
   const columnWidth = (contentWidth - columnGap) / 2;
   const leftX = margin;
@@ -282,6 +264,24 @@ export function generateQuotePdf({
     doc.moveTo(margin, currentY).lineTo(pageWidth - margin, currentY).strokeColor("#f3f4f6").stroke();
     currentY += 6;
   });
+
+  if (mapImageBuffer) {
+    currentY += 12;
+    const mapHeight = 145;
+    if (currentY + mapHeight + 32 > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage();
+      currentY = doc.page.margins.top;
+    }
+
+    doc.font("Helvetica-Bold").fontSize(10).fillColor("#111827").text("Property Map Snapshot", margin, currentY);
+    currentY += 14;
+    doc.image(mapImageBuffer, margin, currentY, {
+      fit: [contentWidth, mapHeight],
+      align: "center",
+      valign: "center",
+    });
+    currentY += mapHeight + 8;
+  }
 
   if (quote.notes) {
     currentY += 10;
