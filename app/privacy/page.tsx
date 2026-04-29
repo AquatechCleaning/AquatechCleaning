@@ -38,6 +38,7 @@ const sections = [
             { label: "Contact details", detail: "Phone number and email address" },
             { label: "Property information", detail: "Physical address and GPS coordinates of the property to be serviced" },
             { label: "Measurement data", detail: "Surface area measurements drawn or entered through our online quote tool" },
+            { label: "Marketing attribution", detail: "Advertising campaign parameters and quote tool events used to understand which campaigns lead to enquiries" },
             { label: "Service preferences", detail: "Types of cleaning services requested and any special instructions or notes" },
             { label: "Communications", detail: "Messages submitted via our contact form or email correspondence" },
           ].map((item) => (
@@ -129,6 +130,10 @@ const sections = [
               name: "Email service providers",
               detail: "Used to send you quotations, confirmations, and follow-up communications. Emails are only sent in response to your enquiry or service booking.",
             },
+            {
+              name: "Meta Pixel and Conversions API",
+              detail: "Used to measure advertising performance, understand quote tool activity, and create remarketing audiences on Meta platforms such as Facebook and Instagram.",
+            },
           ].map((item) => (
             <div key={item.name} style={{ padding: "14px 16px", background: "var(--bg)", borderRadius: "10px" }}>
               <p style={{ fontSize: "14px", fontWeight: 700, color: "var(--navy)", marginBottom: "4px" }}>{item.name}</p>
@@ -165,7 +170,7 @@ const sections = [
     content: (
       <>
         <p>
-          Our website uses Google Maps, which may set cookies or collect usage data when you interact with the map tool. We do not use any additional analytics, advertising, or tracking cookies beyond what is required to operate the map and quoting features.
+          Our website uses Google Maps, which may set cookies or collect usage data when you interact with the map tool. We also use Meta Pixel and related server-side conversion tracking to measure advertising performance and understand quote tool activity such as measurement starts, generated quotes, and accepted quotes.
         </p>
         <p style={{ marginTop: "10px" }}>
           You can control cookie settings through your browser preferences. Disabling cookies may affect the functionality of our online quote tool.

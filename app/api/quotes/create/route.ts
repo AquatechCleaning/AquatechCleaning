@@ -8,6 +8,9 @@ import { Quote } from "@/lib/models/Quote";
 import { SiteSettings } from "@/lib/models/SiteSettings";
 import { QuoteSequence } from "@/lib/models/QuoteSequence";
 import { rateLimit, getIP } from "@/lib/rateLimit";
+import { sendMetaServerEvent } from "@/lib/metaCapi";
+import { notifyQuoteByGoogleMail } from "@/lib/googleQuoteNotifications";
+import crypto from "crypto";
 
 const formatMapPath = (path?: Array<{ lat: number; lng: number }>, shape?: "polygon" | "polyline" | "manual") => {
   if (!path || path.length < 2 || shape === "manual") return undefined;
@@ -134,6 +137,7 @@ export async function POST(request: Request) {
     const quoteNumberValue = sequence.nextNumber;
     const quoteNumber = `QU${quoteNumberValue.toString().padStart(4, "0")}`;
     const dueDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+    const pdfAccessToken = crypto.randomBytes(24).toString("hex");
 
     const quote = await Quote.create({
       customerId: customer._id,
@@ -146,14 +150,42 @@ export async function POST(request: Request) {
       leadSource: "Website Self-Quote",
       geo: coordinates,
       mapImageUrl: buildMapImageUrl(coordinates, parsed.areas),
+      pdfAccessToken,
       quoteNumber,
       reference: quoteNumber,
       dueDate,
+      attribution: parsed.utm,
+      metaEventId: parsed.meta?.eventId,
+    });
+
+    if (parsed.meta?.consent) {
+      await sendMetaServerEvent({
+        eventName: "QuoteGenerated",
+        eventId: parsed.meta?.eventId,
+        request,
+        sourceUrl: parsed.meta?.sourceUrl,
+        fbp: parsed.meta?.fbp,
+        fbc: parsed.meta?.fbc,
+        email: parsed.email,
+        phone: parsed.phone,
+        value: pricing.total,
+        currency: "ZAR",
+        quoteId: quote._id.toString(),
+        quoteNumber,
+      });
+    }
+
+    await notifyQuoteByGoogleMail({
+      event: "generated",
+      quote,
+      customer,
+      property,
     });
 
     return NextResponse.json({
       quoteId: quote._id.toString(),
       quoteNumber,
+      pdfAccessToken,
       totalAmount: pricing.total,
       lineItems: pricing.items,
       minimumFee: pricing.minimumFee,

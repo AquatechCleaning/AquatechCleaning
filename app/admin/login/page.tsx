@@ -1,8 +1,40 @@
 "use client";
 
+import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 
-export default function AdminLoginPage() {
+function AdminLoginForm() {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/admin/dashboard";
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const result = await signIn("credentials", {
+      email,
+      password,
+      callbackUrl,
+      redirect: false,
+    });
+
+    setLoading(false);
+
+    if (result?.error) {
+      setError("Invalid email or password.");
+      return;
+    }
+
+    window.location.href = result?.url || callbackUrl;
+  };
+
   return (
     <div
       style={{
@@ -16,7 +48,6 @@ export default function AdminLoginPage() {
         overflow: "hidden",
       }}
     >
-      {/* Grid texture */}
       <div
         style={{
           position: "absolute",
@@ -27,7 +58,8 @@ export default function AdminLoginPage() {
           pointerEvents: "none",
         }}
       />
-      <div
+      <form
+        onSubmit={submit}
         style={{
           position: "relative",
           width: "100%",
@@ -36,10 +68,8 @@ export default function AdminLoginPage() {
           borderRadius: "20px",
           padding: "40px",
           boxShadow: "var(--shadow-xl)",
-          textAlign: "center",
         }}
       >
-        {/* Logo */}
         <div
           style={{
             display: "flex",
@@ -65,24 +95,49 @@ export default function AdminLoginPage() {
           Aquatech Admin
         </div>
 
-        <div
-          style={{
-            padding: "16px",
-            background: "#FEF9C3",
-            border: "1px solid #FDE68A",
-            borderRadius: "10px",
-            marginBottom: "24px",
-            fontSize: "13px",
-            color: "#92400e",
-            lineHeight: 1.6,
-          }}
-        >
-          Authentication is temporarily disabled. You can access the admin directly.
+        {error && (
+          <div
+            style={{
+              padding: "12px 14px",
+              background: "#FEE2E2",
+              border: "1px solid #FECACA",
+              borderRadius: "8px",
+              color: "#991b1b",
+              fontSize: "13px",
+              marginBottom: "16px",
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        <div className="ui-form-group">
+          <label className="ui-label">Email</label>
+          <input
+            className="ui-input"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
         </div>
 
-        <Link href="/admin/dashboard" className="ui-btn ui-btn-secondary" style={{ width: "100%", padding: "13px" }}>
-          Go to Admin Dashboard →
-        </Link>
+        <div className="ui-form-group">
+          <label className="ui-label">Password</label>
+          <input
+            className="ui-input"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+          />
+        </div>
+
+        <button type="submit" className="ui-btn ui-btn-secondary" style={{ width: "100%", padding: "13px" }} disabled={loading}>
+          {loading ? "Signing in..." : "Sign in"}
+        </button>
 
         <Link
           href="/"
@@ -92,11 +147,20 @@ export default function AdminLoginPage() {
             fontSize: "13px",
             color: "var(--text-muted)",
             textDecoration: "none",
+            textAlign: "center",
           }}
         >
-          ← Back to site
+          Back to site
         </Link>
-      </div>
+      </form>
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminLoginForm />
+    </Suspense>
   );
 }

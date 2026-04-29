@@ -21,8 +21,10 @@ export const siteConfig = {
       { href: "/contact", label: "Contact" },
     ],
     services: [
-      { href: "/services#roof",       label: "Roof & Gutter Services" },
-      { href: "/services#driveway",   label: "Driveway & Paving" },
+      { href: "/roof-cleaning-cape-town",       label: "Roof Cleaning" },
+      { href: "/pressure-washing-cape-town",   label: "Pressure Washing" },
+      { href: "/soft-washing-cape-town", label: "Soft Washing" },
+      { href: "/driveway-cleaning-cape-town",   label: "Driveway & Paving" },
       { href: "/services#commercial", label: "Commercial Cleaning" },
     ],
   },

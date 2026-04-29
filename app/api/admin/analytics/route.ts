@@ -3,8 +3,12 @@ import { dbConnect } from "@/lib/db";
 import { Quote } from "@/lib/models/Quote";
 import { Job } from "@/lib/models/Job";
 import { Customer } from "@/lib/models/Customer";
+import { requireAdminApi } from "@/lib/adminAuth";
 
 export async function GET() {
+  const auth = await requireAdminApi();
+  if (auth.response) return auth.response;
+
   try {
     await dbConnect();
     const now = new Date();

@@ -8,6 +8,8 @@ export interface IMediaItem extends Document {
   locationLabel?: string;
   imageBeforeUrl: string;
   imageAfterUrl: string;
+  beforeDriveFileId?: string;
+  afterDriveFileId?: string;
   featured: boolean;
   createdAt: Date;
 }
@@ -21,6 +23,8 @@ const MediaItemSchema = new Schema<IMediaItem>(
     locationLabel: String,
     imageBeforeUrl: { type: String, required: true },
     imageAfterUrl: { type: String, required: true },
+    beforeDriveFileId: String,
+    afterDriveFileId: String,
     featured: { type: Boolean, default: false },
   },
   { timestamps: true }

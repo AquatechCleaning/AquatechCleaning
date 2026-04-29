@@ -66,6 +66,10 @@ const fetchImageBuffer = async (url?: string) => {
 export async function generateQuotePdf({
   quote,
   lineItems,
+  subtotal,
+  minimumFee,
+  netTotal,
+  totalAmount,
   vatIncluded = false,
   vatAmount = 0,
   vatRate = 0.15,
@@ -76,6 +80,10 @@ export async function generateQuotePdf({
 }: {
   quote: IQuote;
   lineItems: LineItem[];
+  subtotal?: number;
+  minimumFee?: number;
+  netTotal?: number;
+  totalAmount?: number;
   vatIncluded?: boolean;
   vatAmount?: number;
   vatRate?: number;
@@ -235,7 +243,22 @@ export async function generateQuotePdf({
   currentY += 12;
 
   doc.font("Helvetica").fontSize(10).fillColor("#111827");
-  lineItems.forEach((item, index) => {
+  const rawLineItemsTotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
+  const displayNetAmount = netTotal ?? Math.max(rawLineItemsTotal, minimumFee ?? 0);
+  const lineItemShortfall = Math.max(0, Math.round(displayNetAmount - rawLineItemsTotal));
+  const adjustedLineItems =
+    lineItemShortfall > 0 && lineItems.length > 0
+      ? lineItems.map((item, index) => {
+          const baseShare = Math.floor(lineItemShortfall / lineItems.length);
+          const remainder = lineItemShortfall % lineItems.length;
+          return {
+            ...item,
+            amount: item.amount + baseShare + (index < remainder ? 1 : 0),
+          };
+        })
+      : lineItems;
+
+  adjustedLineItems.forEach((item, index) => {
     const quantity = 1;
     const unitPrice = item.amount;
     const discountPercent = 0;
@@ -263,6 +286,34 @@ export async function generateQuotePdf({
     currentY += 18;
     doc.moveTo(margin, currentY).lineTo(pageWidth - margin, currentY).strokeColor("#f3f4f6").stroke();
     currentY += 6;
+  });
+
+  const lineItemsTotal = adjustedLineItems.reduce((sum, item) => sum + item.amount, 0);
+  const displaySubtotal = subtotal ?? lineItemsTotal;
+  const displayNetTotal = netTotal ?? Math.max(displaySubtotal, minimumFee ?? 0);
+  const displayTotal = totalAmount ?? (vatIncluded ? displayNetTotal + vatAmount : displayNetTotal);
+
+  currentY += 8;
+  const totalBoxWidth = 210;
+  const totalBoxX = pageWidth - margin - totalBoxWidth;
+  doc.moveTo(totalBoxX, currentY).lineTo(pageWidth - margin, currentY).strokeColor("#d1d5db").stroke();
+  currentY += 10;
+  if (vatIncluded && vatAmount > 0) {
+    doc.font("Helvetica").fontSize(9).fillColor("#6b7280").text("VAT", totalBoxX, currentY, {
+      width: 80,
+    });
+    doc.font("Helvetica").fontSize(9).fillColor("#111827").text(formatCurrency(vatAmount), totalBoxX + 80, currentY, {
+      width: totalBoxWidth - 80,
+      align: "right",
+    });
+    currentY += 16;
+  }
+  doc.font("Helvetica-Bold").fontSize(11).fillColor("#111827").text("Total", totalBoxX, currentY, {
+    width: 80,
+  });
+  doc.font("Helvetica-Bold").fontSize(12).fillColor("#111827").text(formatCurrency(displayTotal), totalBoxX + 80, currentY, {
+    width: totalBoxWidth - 80,
+    align: "right",
   });
 
   if (mapImageBuffer) {

@@ -150,7 +150,7 @@ export function Footer() {
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {services.map((s) => (
                 <Link
-                  key={s.href}
+                  key={`${s.href}-${s.label}`}
                   href={s.href}
                   style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)", textDecoration: "none" }}
                 >

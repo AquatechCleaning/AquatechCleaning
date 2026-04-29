@@ -238,13 +238,26 @@ img { display: block; max-width: 100%; }
 .rsp-grid-quote   { display: grid; grid-template-columns: 1fr 380px; }
 .rsp-grid-footer  { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; }
 .rsp-grid-form-2  { display: grid; grid-template-columns: 1fr 1fr; }
+.rsp-grid-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rsp-wrap-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.quote-result-shell { padding: 40px 24px; }
+.quote-result-card { padding: 48px; max-width: 620px; width: 100%; text-align: center; }
+.quote-result-total-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.quote-area-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.quote-area-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; }
+.admin-media-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.admin-media-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.admin-media-list { display: flex; flex-direction: column; gap: 12px; max-height: 600px; overflow-y: auto; }
 
 /* All grid children must not overflow their cell */
 .rsp-grid-2 > *,
 .rsp-grid-contact > *,
 .rsp-grid-quote > *,
 .rsp-grid-footer > *,
-.rsp-grid-form-2 > * { min-width: 0; }
+.rsp-grid-form-2 > *,
+.rsp-grid-actions > *,
+.admin-media-layout > *,
+.admin-media-form-grid > * { min-width: 0; }
 
 /* ─── Mobile ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
@@ -257,7 +270,10 @@ img { display: block; max-width: 100%; }
   .rsp-grid-contact,
   .rsp-grid-quote,
   .rsp-grid-footer,
-  .rsp-grid-form-2 { grid-template-columns: 1fr; }
+  .rsp-grid-form-2,
+  .rsp-grid-actions,
+  .admin-media-layout,
+  .admin-media-form-grid { grid-template-columns: 1fr; }
 
   /* ── Section & page padding ── */
   .sec       { padding: 2.5rem 0 !important; }
@@ -284,7 +300,22 @@ img { display: block; max-width: 100%; }
   input, select, textarea, .ui-input { font-size: 16px !important; }
 
   /* ── Quote page ── */
-  .map-rsp { height: 260px !important; width: 100% !important; }
+  .quote-page-container { max-width: none !important; padding-inline: 10px !important; }
+  .quote-map-column { margin-inline: -10px; }
+  .map-rsp {
+    height: calc(100svh - 210px) !important;
+    min-height: 520px !important;
+    max-height: 760px !important;
+    width: 100% !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
+  .quote-result-shell { padding: 24px 16px !important; align-items: flex-start !important; }
+  .quote-result-card { padding: 24px 18px !important; }
+  .quote-result-total-row { flex-direction: column !important; align-items: flex-start !important; }
+  .quote-area-item { align-items: flex-start !important; }
+  .quote-area-meta { line-height: 1.5; }
   /* Pills wrap on mobile */
   .pills-rsp { flex-wrap: wrap !important; gap: 6px !important; }
   .pills-rsp button { padding: 6px 10px !important; font-size: 11px !important; }
@@ -316,4 +347,5 @@ img { display: block; max-width: 100%; }
   /* ── Admin ── */
   .admin-sidebar { display: none; }
   .admin-main    { padding: 1rem; }
+  .admin-media-list { max-height: none !important; overflow: visible !important; }
 }

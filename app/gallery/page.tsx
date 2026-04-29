@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { MissionBeforeAfter } from "@/components/home/MissionBeforeAfter";
 
 export const metadata: Metadata = {
@@ -76,23 +77,10 @@ export default async function GalleryPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px" }}>
             {media.map((item, i) => (
               <div key={item._id} className={`ui-card ui-card-hover reveal-up reveal-up-d${Math.min(i + 1, 4)}`} style={{ overflow: "hidden" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", position: "relative" }}>
-                  <div style={{ position: "relative" }}>
-                    <img src={item.imageBeforeUrl} alt="Before" style={{ height: "200px", width: "100%", objectFit: "cover" }} />
-                    <span style={{ position: "absolute", bottom: "8px", left: "8px", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: "9px", fontWeight: 700, padding: "3px 8px", borderRadius: "100px", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                      Before
-                    </span>
-                  </div>
-                  <div style={{ position: "relative" }}>
-                    <img src={item.imageAfterUrl} alt="After" style={{ height: "200px", width: "100%", objectFit: "cover" }} />
-                    <span style={{ position: "absolute", bottom: "8px", right: "8px", background: "var(--accent)", color: "var(--navy)", fontSize: "9px", fontWeight: 700, padding: "3px 8px", borderRadius: "100px", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                      After
-                    </span>
-                  </div>
-                </div>
+                <BeforeAfterSlider beforeSrc={item.imageBeforeUrl} afterSrc={item.imageAfterUrl} height={200} borderRadius={0} />
                 <div style={{ padding: "14px 18px" }}>
                   <p style={{ fontFamily: "var(--font-display)", fontSize: "14px", fontWeight: 700, color: "var(--navy)" }}>{item.title}</p>
-                  <div style={{ display: "flex", gap: "6px", marginTop: "6px" }}>
+                  <div className="rsp-wrap-row" style={{ marginTop: "6px" }}>
                     {item.serviceType && (
                       <span style={{ fontSize: "10px", background: "#EFF6FF", color: "var(--primary)", padding: "2px 8px", borderRadius: "100px", fontWeight: 600, textTransform: "capitalize" }}>
                         {item.serviceType.replace("_", " ")}

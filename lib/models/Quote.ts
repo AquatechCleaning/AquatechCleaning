@@ -34,9 +34,12 @@ export interface IQuote extends Document {
   leadSource: string;
   geo?: { lat: number; lng: number };
   mapImageUrl?: string;
+  pdfAccessToken?: string;
   quoteNumber?: string;
   reference?: string;
   dueDate?: Date;
+  attribution?: Record<string, string>;
+  metaEventId?: string;
 }
 
 const QuoteSchema = new Schema<IQuote>(
@@ -88,9 +91,12 @@ const QuoteSchema = new Schema<IQuote>(
     leadSource: { type: String, default: "Website Self-Quote" },
     geo: { lat: Number, lng: Number },
     mapImageUrl: String,
+    pdfAccessToken: { type: String, index: true },
     quoteNumber: { type: String },
     reference: { type: String },
     dueDate: { type: Date },
+    attribution: { type: Schema.Types.Mixed },
+    metaEventId: { type: String },
   },
   { timestamps: true }
 );

@@ -46,6 +46,16 @@ export const quoteSchema = z.object({
     .nullable(),
   areas: z.array(areaSchema).min(1),
   notes: z.string().optional(),
+  meta: z
+    .object({
+      eventId: z.string().optional(),
+      fbp: z.string().optional(),
+      fbc: z.string().optional(),
+      sourceUrl: z.string().optional(),
+      consent: z.boolean().optional(),
+    })
+    .optional(),
+  utm: z.record(z.string(), z.string()).optional(),
 }).superRefine((data, ctx) => {
   if (data.propertyType === "commercial" && !data.companyName?.trim()) {
     ctx.addIssue({

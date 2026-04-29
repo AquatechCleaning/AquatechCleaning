@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+import { CookieConsent } from "@/components/CookieConsent";
 import { Providers } from "@/components/providers/Providers";
 import { TemplateShell } from "@/components/layout/TemplateShell";
 
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${geist.variable} antialiased`} suppressHydrationWarning>
         <Providers>
           <TemplateShell>{children}</TemplateShell>
+          <CookieConsent />
         </Providers>
       </body>
     </html>

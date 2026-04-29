@@ -2,8 +2,12 @@ import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Job } from "@/lib/models/Job";
 import { Reminder } from "@/lib/models/Reminder";
+import { requireAdminApi } from "@/lib/adminAuth";
 
 export async function POST(request: Request) {
+  const auth = await requireAdminApi();
+  if (auth.response) return auth.response;
+
   try {
     const body = await request.json();
     const { jobId } = body as { jobId?: string };

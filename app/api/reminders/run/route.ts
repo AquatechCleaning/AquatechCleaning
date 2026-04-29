@@ -4,8 +4,12 @@ import { Reminder } from "@/lib/models/Reminder";
 import { Job } from "@/lib/models/Job";
 import { Customer } from "@/lib/models/Customer";
 import { sendEmailStub } from "@/lib/email";
+import { requireAdminApi } from "@/lib/adminAuth";
 
 export async function POST() {
+  const auth = await requireAdminApi();
+  if (auth.response) return auth.response;
+
   try {
     await dbConnect();
     const now = new Date();

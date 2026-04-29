@@ -22,18 +22,22 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
       // Scripts: self + Google Maps + Next.js inline scripts
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com https://connect.facebook.net",
       // Styles: self + Google Fonts + inline styles (JSX inline styles require unsafe-inline)
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       // Fonts: Google Fonts
       "font-src 'self' https://fonts.gstatic.com",
       // Images: self + Google Maps tiles + data URIs
-      "img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://*.google.com",
+      "img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com https://www.facebook.com",
       // Connections: self + Google Maps API + Google Forms POST + MongoDB (via server only)
-      "connect-src 'self' https://*.googleapis.com https://docs.google.com",
+      "connect-src 'self' https://*.googleapis.com https://docs.google.com https://www.facebook.com https://connect.facebook.net",
       // Frames: Google Maps embed only
       "frame-src https://docs.google.com https://www.google.com",
+      "frame-ancestors 'self'",
+      "form-action 'self' https://docs.google.com",
       // Media: self only
       "media-src 'self'",
       // Workers: self + blob (Google Maps uses blob workers)

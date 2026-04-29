@@ -1,14 +1,15 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { GoogleMap, useJsApiLoader, DrawingManager, Autocomplete, Polyline } from "@react-google-maps/api";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { GoogleMap, useJsApiLoader, DrawingManager, Autocomplete, OverlayView, Polygon, Polyline } from "@react-google-maps/api";
 import { formatCurrency } from "@/lib/format";
+import { captureAttribution, createMetaEventId, getMetaAttribution, hasAdvertisingConsent, trackMetaEvent } from "@/lib/metaPixel";
 
 type AreaType = "roof" | "gutters" | "driveway" | "tiles" | "wall" | "house_wash" | "miscellaneous" | "windows" | "solar_panels";
 type ShapePoint = { lat: number; lng: number };
 type AreaEntry = { id: string; type: AreaType; sqm: number; details?: string; path?: ShapePoint[]; shape?: "polygon" | "polyline" | "manual" };
 type MeasuredArea = AreaEntry & { perimeter?: number };
-type QuoteResult = { quoteId: string; quoteNumber?: string; totalAmount: number; lineItems: any[]; vatIncluded?: boolean; vatRate?: number; vatAmount?: number };
+type QuoteResult = { quoteId: string; quoteNumber?: string; pdfAccessToken?: string; totalAmount: number; lineItems: any[]; vatIncluded?: boolean; vatRate?: number; vatAmount?: number };
 
 const measurementUnits: Record<AreaType, "m2" | "m" | "units"> = {
   roof: "m2", gutters: "m", driveway: "m2", tiles: "m2", wall: "m",
@@ -28,9 +29,36 @@ const serviceTypes: { type: AreaType; label: string; icon: string }[] = [
   { type: "miscellaneous", label: "Other", icon: "⚙️" },
 ];
 
+const tutorialSteps = [
+  {
+    title: "Find the property",
+    body: "Search the address, then zoom in until the roof, paving, walls, or other surfaces are easy to see.",
+  },
+  {
+    title: "Choose the service",
+    body: "Pick the surface type before drawing. Gutters and walls use metres, roofs and paving use square metres, and windows or solar panels use counts.",
+  },
+  {
+    title: "Draw or enter manually",
+    body: "Press Draw, click around the surface on the map, then close the shape. Use manual entry when the map is unclear.",
+  },
+  {
+    title: "Review and submit",
+    body: "Check the measured areas, remove anything incorrect, add your details, and submit the quote request.",
+  },
+];
+
 const libraries: any[] = ["drawing", "geometry", "places"];
 const MAPS_LOADER_ID = "aquatech-maps";
 const defaultCenter = { lat: -33.918861, lng: 18.4233 };
+const MOBILE_CLOSE_THRESHOLD_PIXELS = 44;
+const createClientId = () => {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
 
 export default function QuotePage() {
   const [address, setAddress] = useState("");
@@ -47,9 +75,11 @@ export default function QuotePage() {
   const [quoteActionMessage, setQuoteActionMessage] = useState("");
   const [quoteActionComplete, setQuoteActionComplete] = useState(false);
   const [declineReason, setDeclineReason] = useState("");
+  const [showTutorial, setShowTutorial] = useState(true);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [mobilePolygonPoints, setMobilePolygonPoints] = useState<ShapePoint[]>([]);
+  const [lastAddedArea, setLastAddedArea] = useState<MeasuredArea | null>(null);
 
-  const [roofStoreys, setRoofStoreys] = useState("single");
-  const [gutterStoreys, setGutterStoreys] = useState("single");
   const [drivewayMaterial, setDrivewayMaterial] = useState("");
   const [drivewayRepoint, setDrivewayRepoint] = useState(false);
   const [tileMaterial, setTileMaterial] = useState("");
@@ -63,8 +93,8 @@ export default function QuotePage() {
 
   const buildDetails = (): { details?: string; overrideValue?: number } => {
     switch (activeType) {
-      case "roof": return { details: `Storeys: ${roofStoreys}` };
-      case "gutters": return { details: `Storeys: ${gutterStoreys}` };
+      case "roof": return {};
+      case "gutters": return {};
       case "driveway": return { details: [drivewayMaterial, drivewayRepoint ? "Repoint" : ""].filter(Boolean).join(", ") || undefined };
       case "tiles": return { details: tileMaterial || undefined };
       case "wall": return { details: `Sides: ${wallSides}` };
@@ -79,8 +109,39 @@ export default function QuotePage() {
   const drawingManagerRef = useRef<google.maps.drawing.DrawingManager | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const drawnShapesRef = useRef<google.maps.MVCObject[]>([]);
+  const measurementStartedRef = useRef(false);
+  const surfacePickerRef = useRef<HTMLDivElement | null>(null);
+  const detailsRef = useRef<HTMLDivElement | null>(null);
+  const mobileCloseInProgressRef = useRef(false);
 
   const { isLoaded } = useJsApiLoader({ id: MAPS_LOADER_ID, googleMapsApiKey: apiKey, libraries });
+
+  useEffect(() => {
+    captureAttribution();
+  }, []);
+
+  useEffect(() => {
+    const syncViewport = () => {
+      setIsMobileViewport(window.matchMedia("(max-width: 768px), (pointer: coarse)").matches);
+    };
+
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    return () => window.removeEventListener("resize", syncViewport);
+  }, []);
+
+  const trackMeasurementStarted = (entryMethod: "map" | "manual") => {
+    if (measurementStartedRef.current) return;
+
+    measurementStartedRef.current = true;
+    trackMetaEvent("MeasurementStarted", {
+      eventId: createMetaEventId("MeasurementStarted"),
+      customData: {
+        surface_type: activeType,
+        entry_method: entryMethod,
+      },
+    });
+  };
 
   const handlePlaceChanged = () => {
     const place = autocompleteRef.current?.getPlace();
@@ -93,15 +154,96 @@ export default function QuotePage() {
     mapRef.current?.setZoom(19);
   };
 
-  const handlePolygonComplete = (polygon: google.maps.Polygon) => {
-    const path = polygon.getPath();
+  const buildPolygonEntry = (points: ShapePoint[]): MeasuredArea => {
+    const path = points.map((point) => new google.maps.LatLng(point.lat, point.lng));
     const sqm = Math.round(google.maps.geometry.spherical.computeArea(path));
     const { details, overrideValue } = buildDetails();
-    const points: ShapePoint[] = path.getArray().map((point) => ({ lat: point.lat(), lng: point.lng() }));
-    const entry: MeasuredArea = { id: crypto.randomUUID(), type: activeType, sqm: overrideValue ?? sqm, details, path: points, shape: "polygon" };
+
+    return {
+      id: createClientId(),
+      type: activeType,
+      sqm: overrideValue ?? sqm,
+      details,
+      path: points,
+      shape: "polygon",
+    };
+  };
+
+  const addPolygonMeasurement = (points: ShapePoint[], overlay: google.maps.Polygon) => {
+    const entry = buildPolygonEntry(points);
     setAreas((prev) => [...prev, entry]);
-    drawnShapesRef.current.push(polygon);
+    setLastAddedArea(entry);
+    overlay.setOptions({ clickable: false });
+    drawnShapesRef.current.push(overlay);
     setIsMeasuring(false);
+  };
+
+  const clearCompletedPolygonFills = () => {
+    if (!window.google?.maps) return;
+
+    drawnShapesRef.current.forEach((shape) => {
+      if (shape instanceof google.maps.Polygon) {
+        shape.setOptions({ fillOpacity: 0, clickable: false });
+      }
+    });
+  };
+
+  const handlePolygonComplete = (polygon: google.maps.Polygon) => {
+    const points: ShapePoint[] = polygon.getPath().getArray().map((point) => ({ lat: point.lat(), lng: point.lng() }));
+    addPolygonMeasurement(points, polygon);
+  };
+
+  const getMobileCloseDistanceMeters = (firstPoint: ShapePoint) => {
+    const zoom = mapRef.current?.getZoom() ?? 19;
+    const metersPerPixel = (156543.03392 * Math.cos((firstPoint.lat * Math.PI) / 180)) / 2 ** zoom;
+    return Math.min(18, Math.max(5, metersPerPixel * MOBILE_CLOSE_THRESHOLD_PIXELS));
+  };
+
+  const isCloseToFirstPoint = (point: ShapePoint, firstPoint: ShapePoint) => {
+    if (!window.google?.maps?.geometry || !mapRef.current) return false;
+
+    const distance = google.maps.geometry.spherical.computeDistanceBetween(
+      new google.maps.LatLng(point.lat, point.lng),
+      new google.maps.LatLng(firstPoint.lat, firstPoint.lng)
+    );
+
+    return distance <= getMobileCloseDistanceMeters(firstPoint);
+  };
+
+  const saveMobilePolygon = (points: ShapePoint[]) => {
+    if (!mapRef.current || points.length < 3) return;
+
+    const polygon = new google.maps.Polygon({
+      paths: points,
+      fillColor: "#f0a935",
+      fillOpacity: 0.35,
+      strokeColor: "#02203d",
+      strokeWeight: 2,
+      clickable: false,
+      map: mapRef.current,
+    });
+
+    addPolygonMeasurement(points, polygon);
+    setMobilePolygonPoints([]);
+  };
+
+  const closeMobilePolygonFromPointOne = () => {
+    if (mobilePolygonPoints.length < 3) return;
+    if (mobileCloseInProgressRef.current) return;
+    mobileCloseInProgressRef.current = true;
+    saveMobilePolygon(mobilePolygonPoints);
+  };
+
+  const handleMobilePolygonClick = (event: google.maps.MapMouseEvent) => {
+    if (!event.latLng) return;
+
+    const point = { lat: event.latLng.lat(), lng: event.latLng.lng() };
+    if (mobilePolygonPoints.length >= 3 && isCloseToFirstPoint(point, mobilePolygonPoints[0])) {
+      saveMobilePolygon(mobilePolygonPoints);
+      return;
+    }
+
+    setMobilePolygonPoints((prev) => [...prev, point]);
   };
 
   const handlePolylineComplete = (polyline: google.maps.Polyline) => {
@@ -112,8 +254,9 @@ export default function QuotePage() {
     }
     const { details, overrideValue } = buildDetails();
     const points: ShapePoint[] = path.getArray().map((point) => ({ lat: point.lat(), lng: point.lng() }));
-    const entry: MeasuredArea = { id: crypto.randomUUID(), type: activeType, sqm: overrideValue ?? Math.round(length), perimeter: Math.round(length), details, path: points, shape: "polyline" };
+    const entry: MeasuredArea = { id: createClientId(), type: activeType, sqm: overrideValue ?? Math.round(length), perimeter: Math.round(length), details, path: points, shape: "polyline" };
     setAreas((prev) => [...prev, entry]);
+    setLastAddedArea(entry);
     drawnShapesRef.current.push(polyline);
     setIsMeasuring(false);
   };
@@ -121,12 +264,36 @@ export default function QuotePage() {
   const addManual = () => {
     const val = Number(manualSqm);
     if (!val || val <= 0) return;
+    trackMeasurementStarted("manual");
     const { details } = buildDetails();
-    setAreas((prev) => [...prev, { id: crypto.randomUUID(), type: activeType, sqm: val, details, shape: "manual" }]);
+    const entry: MeasuredArea = { id: createClientId(), type: activeType, sqm: val, details, shape: "manual" };
+    setAreas((prev) => [...prev, entry]);
+    setLastAddedArea(entry);
     setManualSqm("");
   };
 
-  const removeArea = (id: string) => setAreas((prev) => prev.filter((a) => a.id !== id));
+  const removeArea = (id: string) => {
+    setAreas((prev) => prev.filter((a) => a.id !== id));
+    setLastAddedArea((prev) => (prev?.id === id ? null : prev));
+  };
+
+  const measurementLabel = (area: MeasuredArea) => {
+    const service = serviceTypes.find((s) => s.type === area.type)?.label ?? area.type.replace("_", " ");
+    const unit = unitFor(area.type);
+    const measureType = unit === "m" ? "distance" : unit === "units" ? "quantity" : "area";
+    return `${service} ${measureType}: ${area.sqm} ${unit}`;
+  };
+
+  const scrollToSurfacePicker = () => {
+    clearCompletedPolygonFills();
+    setLastAddedArea(null);
+    surfacePickerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const scrollToDetails = () => {
+    setLastAddedArea(null);
+    detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const submitQuote = async () => {
     if (areas.length === 0) { setQuoteStatus("error"); setQuoteMessage("Please add at least one area."); return; }
@@ -139,6 +306,10 @@ export default function QuotePage() {
     setQuoteStatus("idle");
     setQuoteMessage("");
 
+    const quoteGeneratedEventId = createMetaEventId("QuoteGenerated");
+    const attribution = getMetaAttribution();
+    const advertisingConsent = hasAdvertisingConsent();
+
     const payload = {
       ...form,
       name: form.name.trim(),
@@ -146,6 +317,14 @@ export default function QuotePage() {
       address: address?.trim() || "Not specified",
       coordinates,
       areas: areas.map((a) => ({ type: a.type, sqm: a.sqm, details: a.details, path: a.path, shape: a.shape })),
+      meta: {
+        eventId: quoteGeneratedEventId,
+        fbp: attribution.fbp,
+        fbc: attribution.fbc,
+        sourceUrl: attribution.sourceUrl,
+        consent: advertisingConsent,
+      },
+      utm: attribution.utm,
     };
 
     try {
@@ -158,6 +337,15 @@ export default function QuotePage() {
       setQuoteResult(data);
       setQuoteStatus("success");
       setQuoteMessage(`Quote #${data.quoteNumber ?? data.quoteId} submitted!`);
+      trackMetaEvent("QuoteGenerated", {
+        eventId: quoteGeneratedEventId,
+        customData: {
+          currency: "ZAR",
+          value: data.totalAmount,
+          quote_id: data.quoteId,
+          quote_number: data.quoteNumber,
+        },
+      });
     } catch (e: any) {
       setQuoteStatus("error");
       setQuoteMessage(e.message ?? "Something went wrong. Please try again.");
@@ -170,6 +358,19 @@ export default function QuotePage() {
     if (unit === "units") return null;
     return "polygon";
   }, [activeType]);
+  const isMobilePolygonMode = isMobileViewport && isMeasuring && drawingMode === "polygon";
+
+  useEffect(() => {
+    if (!isMeasuring || drawingMode !== "polygon" || !isMobileViewport) {
+      setMobilePolygonPoints([]);
+    }
+  }, [drawingMode, isMeasuring, isMobileViewport]);
+
+  useEffect(() => {
+    if (mobilePolygonPoints.length === 0 || !isMeasuring) {
+      mobileCloseInProgressRef.current = false;
+    }
+  }, [isMeasuring, mobilePolygonPoints.length]);
 
   const inputStyle = {
     width: "100%",
@@ -205,11 +406,25 @@ export default function QuotePage() {
           : "/api/quotes/callback";
 
     try {
+      const quoteAcceptedEventId = createMetaEventId("QuoteAccepted");
+      const attribution = getMetaAttribution();
+      const advertisingConsent = hasAdvertisingConsent();
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           quoteId: quoteResult.quoteId,
+          ...(action === "accept"
+            ? {
+                meta: {
+                  eventId: quoteAcceptedEventId,
+                  fbp: attribution.fbp,
+                  fbc: attribution.fbc,
+                  sourceUrl: attribution.sourceUrl,
+                  consent: advertisingConsent,
+                },
+              }
+            : {}),
           ...(action === "decline" ? { reason: declineReason.trim() || undefined } : {}),
         }),
       });
@@ -225,6 +440,17 @@ export default function QuotePage() {
             ? "Quote declined. Thank you for letting us know."
             : "Callback requested. We will contact you shortly."
       );
+      if (action === "accept") {
+        trackMetaEvent("QuoteAccepted", {
+          eventId: quoteAcceptedEventId,
+          customData: {
+            currency: "ZAR",
+            value: quoteResult.totalAmount,
+            quote_id: quoteResult.quoteId,
+            quote_number: quoteResult.quoteNumber,
+          },
+        });
+      }
     } catch (e: any) {
       setQuoteActionStatus("error");
       setQuoteActionMessage(e.message ?? "Unable to update quote. Please try again.");
@@ -233,8 +459,8 @@ export default function QuotePage() {
 
   if (quoteStatus === "success" && quoteResult) {
     return (
-      <div style={{ background: "var(--bg)", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
-        <div className="ui-card reveal-up" style={{ padding: "48px", maxWidth: "620px", width: "100%", textAlign: "center" }}>
+      <div className="quote-result-shell" style={{ background: "var(--bg)", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="ui-card reveal-up quote-result-card">
           <div style={{ fontSize: "56px", marginBottom: "20px" }}>✅</div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 800, color: "var(--navy)", marginBottom: "10px" }}>
             Quote Ready
@@ -243,7 +469,7 @@ export default function QuotePage() {
             Review quote #{quoteResult.quoteNumber ?? quoteResult.quoteId}, then accept, decline, request a call back, or download a copy.
           </p>
           <div style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "12px", padding: "20px", marginBottom: "28px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div className="quote-result-total-row">
               <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>Estimated Total</span>
               <span style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 800, color: "var(--primary)" }}>
                 {formatCurrency(quoteResult.totalAmount)}
@@ -255,7 +481,7 @@ export default function QuotePage() {
               </p>
             )}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+          <div className="rsp-grid-actions" style={{ marginBottom: "10px" }}>
             <button
               className="ui-btn ui-btn-primary"
               onClick={() => handleQuoteAction("accept")}
@@ -271,7 +497,7 @@ export default function QuotePage() {
               Decline Quote
             </button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "14px" }}>
+          <div className="rsp-grid-actions" style={{ marginBottom: "14px" }}>
             <button
               className="ui-btn ui-btn-secondary"
               onClick={() => handleQuoteAction("callback")}
@@ -280,7 +506,7 @@ export default function QuotePage() {
               Request Call Back
             </button>
             <a
-              href={`/api/quotes/pdf/${quoteResult.quoteId}`}
+              href={`/api/quotes/pdf/${quoteResult.quoteId}${quoteResult.pdfAccessToken ? `?token=${quoteResult.pdfAccessToken}` : ""}`}
               className="ui-btn ui-btn-ghost"
               style={{ display: "block", textDecoration: "none" }}
             >
@@ -332,12 +558,97 @@ export default function QuotePage() {
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "40px", background: "var(--bg)", clipPath: "ellipse(60% 100% at 50% 100%)" }} />
       </div>
 
-      <div className="ui-container pg-body" style={{ padding: "40px 24px" }}>
+      <div className="ui-container pg-body quote-page-container" style={{ padding: "40px 24px" }}>
+        {showTutorial && (
+          <div className="ui-card reveal-up" style={{ padding: "24px", marginBottom: "24px", borderColor: "rgba(240,169,53,0.35)" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", marginBottom: "18px" }}>
+              <div>
+                <p style={labelStyle}>Quick tutorial</p>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: "22px", fontWeight: 800, color: "var(--navy)", margin: 0 }}>
+                  How to build your quote
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTutorial(false)}
+                aria-label="Hide tutorial"
+                style={{
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  background: "#fff",
+                  color: "var(--text-muted)",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  padding: "8px 10px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Hide
+              </button>
+            </div>
+            <div className="rsp-grid-form-2" style={{ gap: "12px" }}>
+              {tutorialSteps.map((step, index) => (
+                <div
+                  key={step.title}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "34px 1fr",
+                    gap: "12px",
+                    alignItems: "start",
+                    background: "var(--surface-2)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "8px",
+                    padding: "14px",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "34px",
+                      height: "34px",
+                      borderRadius: "8px",
+                      background: index === 0 ? "var(--primary)" : "var(--navy)",
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "13px",
+                      fontWeight: 800,
+                    }}
+                  >
+                    {index + 1}
+                  </div>
+                  <div>
+                    <h3 style={{ fontFamily: "var(--font-display)", fontSize: "14px", fontWeight: 800, color: "var(--navy)", margin: "0 0 4px" }}>
+                      {step.title}
+                    </h3>
+                    <p style={{ fontSize: "12px", color: "var(--text-muted)", lineHeight: 1.6, margin: 0 }}>
+                      {step.body}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {!showTutorial && (
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
+            <button
+              type="button"
+              className="ui-btn ui-btn-ghost"
+              onClick={() => setShowTutorial(true)}
+              style={{ padding: "9px 14px", fontSize: "12px" }}
+            >
+              Show tutorial
+            </button>
+          </div>
+        )}
+
         <div className="rsp-grid-quote" style={{ gap: "24px", alignItems: "start" }}>
           {/* Map column */}
-          <div>
+          <div className="quote-map-column">
             {/* Service type picker */}
-            <div className="ui-card" style={{ padding: "16px", marginBottom: "16px" }}>
+            <div ref={surfacePickerRef} className="ui-card" style={{ padding: "16px", marginBottom: "16px", scrollMarginTop: "18px" }}>
               <p style={labelStyle}>Select surface type to measure</p>
               <div className="pills-rsp" style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 {serviceTypes.map((s) => (
@@ -406,6 +717,7 @@ export default function QuotePage() {
                     center={coordinates ?? defaultCenter}
                     zoom={coordinates ? 19 : 12}
                     mapTypeId="hybrid"
+                    onClick={isMobilePolygonMode ? handleMobilePolygonClick : undefined}
                     onLoad={(m) => {
                       mapRef.current = m;
                       m.setMapTypeId("hybrid");
@@ -415,9 +727,10 @@ export default function QuotePage() {
                       disableDefaultUI: false,
                       mapTypeControl: true,
                       streetViewControl: false,
+                      clickableIcons: !isMobilePolygonMode,
                     }}
                   >
-                    {isMeasuring && drawingMode && (
+                    {isMeasuring && drawingMode && !isMobilePolygonMode && (
                       <DrawingManager
                         onLoad={(dm) => { drawingManagerRef.current = dm; }}
                         onPolygonComplete={handlePolygonComplete}
@@ -425,12 +738,139 @@ export default function QuotePage() {
                         drawingMode={drawingMode as any}
                         options={{
                           drawingControl: false,
-                          polygonOptions: { fillColor: "#f0a935", fillOpacity: 0.35, strokeColor: "#02203d", strokeWeight: 2 },
-                          polylineOptions: { strokeColor: "#f0a935", strokeWeight: 3 },
+                          polygonOptions: { fillColor: "#f0a935", fillOpacity: 0.35, strokeColor: "#02203d", strokeWeight: 2, clickable: false },
+                          polylineOptions: { strokeColor: "#f0a935", strokeWeight: 3, clickable: false },
                         }}
                       />
                     )}
+                    {isMobilePolygonMode && mobilePolygonPoints.length > 0 && (
+                      <>
+                        <Polyline
+                          path={mobilePolygonPoints}
+                          options={{
+                            strokeColor: "#f0a935",
+                            strokeWeight: 3,
+                            clickable: false,
+                          }}
+                        />
+                        {mobilePolygonPoints.length > 2 && (
+                          <Polygon
+                            paths={mobilePolygonPoints}
+                            options={{
+                              fillColor: "#f0a935",
+                              fillOpacity: 0.2,
+                              strokeColor: "#02203d",
+                              strokeWeight: 2,
+                              clickable: false,
+                            }}
+                          />
+                        )}
+                        {mobilePolygonPoints.map((point, index) => {
+                          const canClose = index === 0 && mobilePolygonPoints.length >= 3;
+
+                          return (
+                            <OverlayView
+                              key={`${point.lat}-${point.lng}-${index}`}
+                              position={point}
+                              mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                            >
+                              <button
+                                type="button"
+                                aria-label={canClose ? "Close shape" : `Point ${index + 1}`}
+                                onPointerDown={(event) => {
+                                  if (!canClose) return;
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  closeMobilePolygonFromPointOne();
+                                }}
+                                onMouseDown={(event) => {
+                                  if (!canClose) return;
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  closeMobilePolygonFromPointOne();
+                                }}
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  if (canClose) closeMobilePolygonFromPointOne();
+                                }}
+                                onTouchEnd={(event) => {
+                                  if (!canClose) return;
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  closeMobilePolygonFromPointOne();
+                                }}
+                                style={{
+                                  width: canClose ? "44px" : "30px",
+                                  height: canClose ? "44px" : "30px",
+                                  borderRadius: "999px",
+                                  border: "2px solid #02203d",
+                                  background: canClose ? "#ffffff" : "#f0a935",
+                                  color: "#02203d",
+                                  fontSize: "12px",
+                                  fontWeight: 800,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  transform: "translate(-50%, -50%)",
+                                  boxShadow: "0 2px 8px rgba(2,32,61,0.25)",
+                                  cursor: canClose ? "pointer" : "default",
+                                  padding: 0,
+                                  pointerEvents: canClose ? "auto" : "none",
+                                  touchAction: "none",
+                                  position: "relative",
+                                  zIndex: canClose ? 1000 : 1,
+                                }}
+                              >
+                                {index + 1}
+                              </button>
+                            </OverlayView>
+                          );
+                        })}
+                      </>
+                    )}
                   </GoogleMap>
+                  {lastAddedArea && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: "12px",
+                        right: "12px",
+                        bottom: "12px",
+                        zIndex: 30,
+                        background: "rgba(255,255,255,0.97)",
+                        border: "1px solid rgba(2,32,61,0.12)",
+                        borderRadius: "10px",
+                        boxShadow: "0 12px 30px rgba(2,32,61,0.2)",
+                        padding: "12px",
+                      }}
+                    >
+                      <p style={{ fontSize: "10px", fontWeight: 800, color: "var(--primary)", textTransform: "uppercase", marginBottom: "4px" }}>
+                        Added to Quote
+                      </p>
+                      <p style={{ fontSize: "13px", fontWeight: 800, color: "var(--navy)", marginBottom: "10px" }}>
+                        {measurementLabel(lastAddedArea)}
+                      </p>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                        <button
+                          type="button"
+                          className="ui-btn ui-btn-ghost"
+                          style={{ padding: "9px 10px", fontSize: "12px" }}
+                          onClick={scrollToSurfacePicker}
+                        >
+                          Add Another Surface
+                        </button>
+                        <button
+                          type="button"
+                          className="ui-btn ui-btn-primary"
+                          style={{ padding: "9px 10px", fontSize: "12px" }}
+                          onClick={scrollToDetails}
+                        >
+                          Continue to Quote
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
@@ -446,9 +886,15 @@ export default function QuotePage() {
                   <button
                     className={`ui-btn ${isMeasuring ? "ui-btn-secondary" : "ui-btn-primary"}`}
                     style={{ width: "100%" }}
-                    onClick={() => setIsMeasuring(!isMeasuring)}
+                    onClick={() => {
+                      if (!isMeasuring) {
+                        clearCompletedPolygonFills();
+                        trackMeasurementStarted("map");
+                      }
+                      setIsMeasuring(!isMeasuring);
+                    }}
                   >
-                    {isMeasuring ? "⏹ Stop Drawing" : `✏️ Draw ${serviceTypes.find((s) => s.type === activeType)?.label}`}
+                    {isMeasuring ? "Stop Drawing" : `Draw ${serviceTypes.find((s) => s.type === activeType)?.label}`}
                   </button>
                 )}
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
@@ -498,11 +944,9 @@ export default function QuotePage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {areas.map((a) => (
                     <div
+                      className="quote-area-item"
                       key={a.id}
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
                         padding: "8px 12px",
                         background: "var(--surface-2)",
                         borderRadius: "8px",
@@ -510,7 +954,7 @@ export default function QuotePage() {
                         fontSize: "12px",
                       }}
                     >
-                      <div>
+                      <div className="quote-area-meta">
                         <span style={{ fontWeight: 600, color: "var(--navy)", textTransform: "capitalize" }}>{a.type.replace("_", " ")}</span>
                         <span style={{ color: "var(--text-muted)", marginLeft: "6px" }}>
                           {a.sqm} {unitFor(a.type)}
@@ -530,7 +974,7 @@ export default function QuotePage() {
             </div>
 
             {/* Contact details */}
-            <div className="ui-card" style={{ padding: "20px" }}>
+            <div ref={detailsRef} className="ui-card" style={{ padding: "20px", scrollMarginTop: "18px" }}>
               <h3 style={{ fontFamily: "var(--font-display)", fontSize: "14px", fontWeight: 700, color: "var(--navy)", marginBottom: "14px" }}>
                 👤 Your Details
               </h3>
@@ -602,9 +1046,6 @@ export default function QuotePage() {
               >
                 Submit Quote Request →
               </button>
-              <p style={{ fontSize: "11px", color: "var(--text-muted)", textAlign: "center", marginTop: "10px" }}>
-                We confirm within 1 business day · No obligation
-              </p>
             </div>
           </div>
         </div>

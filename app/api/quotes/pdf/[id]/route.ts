@@ -7,6 +7,7 @@ import { Property } from "@/lib/models/Property";
 import { calculateQuote } from "@/lib/pricing";
 import { generateQuotePdf } from "../../../../../lib/pdf";
 import { SiteSettings } from "@/lib/models/SiteSettings";
+import { requireAdminSession } from "@/lib/adminAuth";
 
 export const runtime = "nodejs";
 
@@ -50,9 +51,17 @@ export async function GET(req: Request, { params }: Params) {
       });
     }
     const isValidObjectId = mongoose.Types.ObjectId.isValid(id);
-    let quote = isValidObjectId ? await Quote.findById(id) : null;
+    const quote = isValidObjectId ? await Quote.findById(id) : null;
     if (!quote) {
       return NextResponse.json({ error: "Quote not found", details: id }, { status: 404 });
+    }
+
+    if (quote.pdfAccessToken) {
+      const token = searchParams.get("token");
+      const adminSession = await requireAdminSession();
+      if (!adminSession && token !== quote.pdfAccessToken) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
     }
 
     const customer = await Customer.findById(quote.customerId);
@@ -74,6 +83,10 @@ export async function GET(req: Request, { params }: Params) {
     const pdfBuffer = await generateQuotePdf({
       quote,
       lineItems: pricing.items,
+      subtotal: pricing.subtotal,
+      minimumFee: pricing.minimumFee,
+      netTotal: pricing.netTotal,
+      totalAmount: pricing.total,
       vatIncluded: pricing.vatIncluded,
       vatAmount: pricing.vatAmount,
       vatRate: pricing.vatRate,

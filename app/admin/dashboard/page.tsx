@@ -1,14 +1,34 @@
+import Link from "next/link";
+import { dbConnect } from "@/lib/db";
 import { formatCurrency } from "@/lib/format";
+import { Customer } from "@/lib/models/Customer";
+import { Job } from "@/lib/models/Job";
+import { Quote } from "@/lib/models/Quote";
+
+export const dynamic = "force-dynamic";
 
 async function getSummary() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/admin/analytics`, { cache: "no-store" });
-  if (!res.ok) return null;
-  return res.json();
+  await dbConnect();
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const quotesThisMonth = await Quote.find({ createdAt: { $gte: startOfMonth } });
+  const accepted = quotesThisMonth.filter((quote) => quote.status === "Accepted").length;
+  const conversionRate = quotesThisMonth.length === 0 ? 0 : Math.round((accepted / quotesThisMonth.length) * 100);
+  const jobsThisMonth = await Job.find({ createdAt: { $gte: startOfMonth } });
+  const revenue = jobsThisMonth.reduce((sum, job) => sum + (job.actualAmountCharged || 0), 0);
+  const upcomingJobs = await Job.find({ status: "Scheduled" }).sort({ scheduledDate: 1 }).limit(5).lean();
+  const retention = await Customer.aggregate([
+    { $lookup: { from: "jobs", localField: "_id", foreignField: "customerId", as: "jobs" } },
+    { $project: { jobsCount: { $size: "$jobs" } } },
+  ]);
+  const repeatRate =
+    retention.length === 0 ? 0 : Math.round((retention.filter((customer) => customer.jobsCount > 1).length / retention.length) * 100);
+
+  return { quotesThisMonth: quotesThisMonth.length, conversionRate, revenue, upcomingJobs, repeatRate };
 }
 
 export default async function AdminDashboard() {
-  const data = await getSummary();
-  const summary = data?.summary || { quotesThisMonth: 0, conversionRate: 0, revenue: 0, upcomingJobs: [], repeatRate: 0 };
+  const summary = await getSummary();
 
   const kpis = [
     { label: "Quotes This Month", value: summary.quotesThisMonth, format: (v: number) => v.toString(), accent: "var(--primary)" },
@@ -54,14 +74,14 @@ export default async function AdminDashboard() {
         <div className="ui-card" style={{ overflow: "hidden" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: "15px", fontWeight: 700, color: "var(--navy)" }}>Upcoming Jobs</h2>
-            <a href="/admin/jobs" style={{ fontSize: "12px", color: "var(--primary)", textDecoration: "none", fontWeight: 600 }}>View all →</a>
+            <Link href="/admin/jobs" style={{ fontSize: "12px", color: "var(--primary)", textDecoration: "none", fontWeight: 600 }}>View all →</Link>
           </div>
           {summary.upcomingJobs.length === 0 ? (
             <div style={{ padding: "32px 20px", textAlign: "center", color: "var(--text-muted)", fontSize: "13px" }}>No upcoming jobs scheduled.</div>
           ) : (
-            summary.upcomingJobs.map((job: any) => (
+            summary.upcomingJobs.map((job) => (
               <div
-                key={job._id}
+                key={job._id.toString()}
                 style={{
                   padding: "12px 20px",
                   borderBottom: "1px solid var(--bg)",
@@ -73,7 +93,7 @@ export default async function AdminDashboard() {
                 <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }} />
                 <span style={{ flex: 1, fontSize: "13px", fontWeight: 600, color: "var(--navy)" }}>{job.teamName || "Team TBD"}</span>
                 <span style={{ fontSize: "11px", background: "#EFF6FF", color: "var(--primary)", padding: "2px 8px", borderRadius: "100px", fontWeight: 600 }}>
-                  {job.serviceType || "General"}
+                  {job.servicesPerformed?.[0]?.type?.replace("_", " ") || "General"}
                 </span>
                 <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                   {job.scheduledDate ? new Date(job.scheduledDate).toLocaleDateString("en-ZA") : "Unscheduled"}

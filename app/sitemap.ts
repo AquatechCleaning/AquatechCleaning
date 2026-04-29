@@ -7,6 +7,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: base, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${base}/services`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${base}/pressure-washing-cape-town`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${base}/soft-washing-cape-town`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${base}/roof-cleaning-cape-town`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${base}/driveway-cleaning-cape-town`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/quote`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/gallery`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${base}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },

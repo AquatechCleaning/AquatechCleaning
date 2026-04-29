@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Job } from "@/lib/models/Job";
 import { Quote } from "@/lib/models/Quote";
+import { requireAdminApi } from "@/lib/adminAuth";
 
 type ScheduleType = "half_day" | "full_day" | "multiple_days";
 type ScheduleSlot = "morning" | "afternoon";
@@ -60,6 +61,9 @@ const resolveScheduleRange = ({
 };
 
 export async function POST(request: Request) {
+  const auth = await requireAdminApi();
+  if (auth.response) return auth.response;
+
   try {
     const body = await request.json();
     const { quoteId, scheduleType, scheduleSlot, startDate, endDate, teamName, notes } = body as {

@@ -2,8 +2,12 @@ import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Quote } from "@/lib/models/Quote";
+import { requireAdminApi } from "@/lib/adminAuth";
 
 export async function GET(request: Request) {
+  const auth = await requireAdminApi();
+  if (auth.response) return auth.response;
+
   try {
     await dbConnect();
     const connection = mongoose.connection;

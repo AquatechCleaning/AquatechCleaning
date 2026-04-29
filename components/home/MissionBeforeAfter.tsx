@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { TouchEvent, useState } from "react";
 
 export function MissionBeforeAfter() {
   const [yPercent, setYPercent] = useState(50);
@@ -8,6 +8,14 @@ export function MissionBeforeAfter() {
   const update = (clientY: number, rect: DOMRect) => {
     const y = ((clientY - rect.top) / rect.height) * 100;
     setYPercent(Math.max(0, Math.min(100, y)));
+  };
+
+  const handleTouch = (e: TouchEvent<HTMLDivElement>) => {
+    const t = e.touches[0];
+    if (!t) return;
+
+    e.preventDefault();
+    update(t.clientY, e.currentTarget.getBoundingClientRect());
   };
 
   return (
@@ -20,12 +28,12 @@ export function MissionBeforeAfter() {
         overflow: "hidden",
         cursor: "ns-resize",
         userSelect: "none",
+        touchAction: "none",
+        overscrollBehavior: "contain",
       }}
       onMouseMove={(e) => update(e.clientY, e.currentTarget.getBoundingClientRect())}
-      onTouchMove={(e) => {
-        const t = e.touches[0];
-        if (t) update(t.clientY, e.currentTarget.getBoundingClientRect());
-      }}
+      onTouchStart={handleTouch}
+      onTouchMove={handleTouch}
     >
       <img src="/After.jpeg" alt="After cleaning" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
       <img

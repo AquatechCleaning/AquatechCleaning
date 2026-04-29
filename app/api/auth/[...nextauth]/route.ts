@@ -1,10 +1,6 @@
-import { NextResponse } from "next/server";
+import NextAuth from "next-auth";
+import { authOptions } from "@/lib/nextauth";
 
-// Auth temporarily disabled. Return empty session responses.
-export async function GET() {
-  return NextResponse.json({ session: null, message: "Auth disabled" });
-}
+const handler = NextAuth(authOptions);
 
-export async function POST() {
-  return NextResponse.json({ session: null, message: "Auth disabled" });
-}
+export { handler as GET, handler as POST };
