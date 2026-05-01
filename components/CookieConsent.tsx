@@ -128,7 +128,7 @@ export function CookieConsent() {
                     marginBottom: "4px",
                   }}
                 >
-                  Cookies and advertising measurement
+                  Cookies
                 </p>
                 <p style={{ color: "var(--text-muted)", fontSize: "13px", lineHeight: 1.6 }}>
                   We use essential cookies for the quote tool and optional Meta tracking to measure ads and improve

@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { siteConfig } from "@/config/site";
@@ -48,6 +49,32 @@ function WhatsAppFAB() {
 export function TemplateShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdmin = pathname.startsWith("/admin");
+
+  useEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    const html = document.documentElement;
+    const previousScrollBehavior = html.style.scrollBehavior;
+    html.style.scrollBehavior = "auto";
+
+    window.scrollTo(0, 0);
+    document.body.scrollTop = 0;
+    html.scrollTop = 0;
+
+    const frame = window.requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
+      document.body.scrollTop = 0;
+      html.scrollTop = 0;
+      html.style.scrollBehavior = previousScrollBehavior;
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      html.style.scrollBehavior = previousScrollBehavior;
+    };
+  }, [pathname]);
 
   if (isAdmin) return <>{children}</>;
 
