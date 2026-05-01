@@ -140,8 +140,9 @@ export default async function Home() {
 
   const statItems = [
     { label: "Clients Served", value: stats.clientsServed || 543, suffix: "+" },
-    { label: "Meters Cleaned", value: stats.totalSqmCleaned || 80000, suffix: "m2+", decimals: 0 },
-    { label: "Return Rate", value: 90, suffix: "%", decimals: 0 },
+    { label: "m² Cleaned", value: stats.totalSqmCleaned || 80000, suffix: "+", decimals: 0 },
+    { label: "Avg Rating", value: stats.averageRating || 5.0, suffix: " / 5.0", decimals: 1 },
+    { label: "Return Clients", value: stats.repeatCustomerRate || 90, suffix: "%", decimals: 0 },
   ];
 
   return (

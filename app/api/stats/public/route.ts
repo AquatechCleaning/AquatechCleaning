@@ -4,6 +4,7 @@ import { Job } from "@/lib/models/Job";
 
 const BASE_CLIENTS_SERVED = 543;
 const BASE_SQM_CLEANED = 80000;
+const AVERAGE_RATING = 5.0;
 const RETURN_RATE = 90;
 
 export async function GET() {
@@ -18,7 +19,7 @@ export async function GET() {
     return NextResponse.json({
       clientsServed,
       totalSqmCleaned: Math.round(totalSqmCleaned),
-      averageRating: 0,
+      averageRating: AVERAGE_RATING,
       repeatCustomerRate: RETURN_RATE,
     });
   } catch (error) {
@@ -26,7 +27,7 @@ export async function GET() {
     return NextResponse.json({
       clientsServed: BASE_CLIENTS_SERVED,
       totalSqmCleaned: BASE_SQM_CLEANED,
-      averageRating: 0,
+      averageRating: AVERAGE_RATING,
       repeatCustomerRate: RETURN_RATE,
     });
   }
