@@ -40,8 +40,7 @@ function AdminLoginForm() {
       return;
     }
 
-    router.replace(result.url || callbackUrl);
-    router.refresh();
+    window.location.assign(callbackUrl);
   };
 
   return (

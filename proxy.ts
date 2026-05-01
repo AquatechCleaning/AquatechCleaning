@@ -4,9 +4,15 @@ import { getToken } from "next-auth/jwt";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (pathname === "/admin/login") return NextResponse.next();
-
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+
+  if (pathname === "/admin/login") {
+    if (!token) return NextResponse.next();
+
+    const callbackUrl = request.nextUrl.searchParams.get("callbackUrl") || "/admin/dashboard";
+    return NextResponse.redirect(new URL(callbackUrl, request.url));
+  }
+
   if (token) return NextResponse.next();
 
   const loginUrl = new URL("/admin/login", request.url);
