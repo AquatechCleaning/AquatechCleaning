@@ -2,9 +2,20 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+async function getAdminToken(request: NextRequest) {
+  const secret = process.env.NEXTAUTH_SECRET;
+  const secureCookie = request.nextUrl.protocol === "https:";
+
+  return (
+    (await getToken({ req: request, secret, secureCookie })) ||
+    (await getToken({ req: request, secret, cookieName: "__Secure-next-auth.session-token" })) ||
+    (await getToken({ req: request, secret, cookieName: "next-auth.session-token" }))
+  );
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getAdminToken(request);
 
   if (pathname === "/admin/login") {
     if (!token) return NextResponse.next();
