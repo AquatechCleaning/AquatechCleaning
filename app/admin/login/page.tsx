@@ -1,17 +1,25 @@
 "use client";
 
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 function AdminLoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/admin/dashboard";
+  const { status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace(callbackUrl);
+    }
+  }, [callbackUrl, router, status]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -27,12 +35,13 @@ function AdminLoginForm() {
 
     setLoading(false);
 
-    if (result?.error) {
+    if (!result?.ok || result.error) {
       setError("Invalid email or password.");
       return;
     }
 
-    window.location.href = result?.url || callbackUrl;
+    router.replace(result.url || callbackUrl);
+    router.refresh();
   };
 
   return (
