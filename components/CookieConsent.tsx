@@ -13,6 +13,7 @@ type ConsentChoice = "accepted" | "declined";
 
 declare global {
   interface Window {
+    __aquatechLastGa4PageView?: string;
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
     fbq?: (...args: unknown[]) => void;
@@ -34,6 +35,10 @@ const trackGa4PageView = (attempt = 0) => {
   if (!ga4MeasurementId) return;
 
   if (typeof window.gtag === "function") {
+    const pageKey = window.location.href;
+    if (window.__aquatechLastGa4PageView === pageKey) return;
+
+    window.__aquatechLastGa4PageView = pageKey;
     window.gtag("event", "page_view", {
       page_location: window.location.href,
       page_path: window.location.pathname + window.location.search,
@@ -124,6 +129,7 @@ export function CookieConsent() {
             id="ga4-loader"
             src={`https://www.googletagmanager.com/gtag/js?id=${ga4MeasurementId}`}
             strategy="afterInteractive"
+            onReady={() => trackGa4PageView()}
           />
           <Script id="ga4-config" strategy="afterInteractive">
             {`
