@@ -1,10 +1,65 @@
 import { formatCurrency } from "@/lib/format";
+import { dbConnect } from "@/lib/db";
+import { Quote } from "@/lib/models/Quote";
+import { requireAdminSession } from "@/lib/adminAuth";
+import { redirect } from "next/navigation";
 import { ScheduleQuoteForm } from "./ScheduleQuoteForm";
 
-async function getQuotes() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/admin/quotes`, { cache: "no-store" });
-  if (!res.ok) return [];
-  return res.json();
+type QuoteArea = {
+  type: string;
+  sqm?: number;
+  details?: string;
+};
+
+type RawQuote = {
+  _id: unknown;
+  customerId?: unknown;
+  propertyId?: unknown;
+  areas?: QuoteArea[];
+  status?: string;
+  totalAmount?: number;
+  quoteNumber?: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+};
+
+type AdminQuote = Omit<RawQuote, "_id" | "customerId" | "propertyId" | "createdAt" | "updatedAt"> & {
+  _id: string;
+  customerId: string;
+  propertyId: string;
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+function stringifyId(value: unknown) {
+  if (value && typeof value === "object" && "toString" in value && typeof value.toString === "function") {
+    return value.toString();
+  }
+
+  return String(value ?? "");
+}
+
+function serializeDate(value?: Date | string) {
+  return value instanceof Date ? value.toISOString() : value;
+}
+
+async function getQuotes(): Promise<AdminQuote[]> {
+  const session = await requireAdminSession();
+  if (!session) redirect("/admin/login?callbackUrl=/admin/quotes");
+
+  await dbConnect();
+  const quotes = (await Quote.find().sort({ createdAt: -1 }).limit(100).lean()) as RawQuote[];
+
+  return quotes.map((quote) => ({
+    ...quote,
+    _id: stringifyId(quote._id),
+    customerId: stringifyId(quote.customerId),
+    propertyId: stringifyId(quote.propertyId),
+    status: quote.status ?? "Pending",
+    createdAt: serializeDate(quote.createdAt),
+    updatedAt: serializeDate(quote.updatedAt),
+  }));
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -49,7 +104,7 @@ export default async function QuotesPage() {
       {/* Summary counts */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "20px", flexWrap: "wrap" }}>
         {["All", "Pending", "Sent", "Accepted", "Scheduled", "Declined", "Callback Requested"].map((s) => {
-          const count = s === "All" ? quotes.length : quotes.filter((q: any) => q.status === s).length;
+          const count = s === "All" ? quotes.length : quotes.filter((q) => q.status === s).length;
           return (
             <div
               key={s}
@@ -83,7 +138,7 @@ export default async function QuotesPage() {
               </tr>
             </thead>
             <tbody>
-              {quotes.map((quote: any) => (
+              {quotes.map((quote) => (
                 <tr key={quote._id}>
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -112,7 +167,7 @@ export default async function QuotesPage() {
                   </td>
                   <td>
                     <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                      {(quote.areas ?? []).slice(0, 3).map((a: any) => (
+                      {(quote.areas ?? []).slice(0, 3).map((a) => (
                         <span
                           key={a.type}
                           style={{

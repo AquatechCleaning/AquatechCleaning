@@ -121,6 +121,12 @@ export default function QuotePage() {
   }, []);
 
   useEffect(() => {
+    if (quoteStatus === "success" && quoteResult) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [quoteStatus, quoteResult]);
+
+  useEffect(() => {
     const syncViewport = () => {
       setIsMobileViewport(window.matchMedia("(max-width: 768px), (pointer: coarse)").matches);
     };
