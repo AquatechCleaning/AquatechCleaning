@@ -50,6 +50,26 @@ const buildMapImageUrl = (
   return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
 };
 
+const createQuoteResponse = (
+  quote: {
+    _id: { toString(): string };
+    quoteNumber?: string;
+    pdfAccessToken?: string;
+  },
+  pricing: Awaited<ReturnType<typeof calculateQuote>>
+) =>
+  NextResponse.json({
+    quoteId: quote._id.toString(),
+    quoteNumber: quote.quoteNumber,
+    pdfAccessToken: quote.pdfAccessToken,
+    totalAmount: pricing.total,
+    lineItems: pricing.items,
+    minimumFee: pricing.minimumFee,
+    vatIncluded: pricing.vatIncluded,
+    vatRate: pricing.vatRate,
+    vatAmount: pricing.vatAmount,
+  });
+
 export async function POST(request: Request) {
   // 10 quote submissions per IP per 5 minutes
   const { allowed } = rateLimit(getIP(request), { limit: 10, windowMs: 5 * 60_000 });
@@ -119,6 +139,14 @@ export async function POST(request: Request) {
     }
 
     const pricing = await calculateQuote(parsed.areas);
+    const submissionId = parsed.meta?.requestId;
+    if (submissionId) {
+      const existingQuote = await Quote.findOne({ submissionId });
+      if (existingQuote) {
+        return createQuoteResponse(existingQuote, pricing);
+      }
+    }
+
     const settings = await SiteSettings.findOne();
     const startNumber = Number(settings?.quoteNumberStart ?? 1) || 1;
     await QuoteSequence.findOneAndUpdate(
@@ -139,24 +167,36 @@ export async function POST(request: Request) {
     const dueDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
     const pdfAccessToken = crypto.randomBytes(24).toString("hex");
 
-    const quote = await Quote.create({
-      customerId: customer._id,
-      propertyId: property._id,
-      areas: parsed.areas,
-      notes: parsed.notes,
-      status: "Pending",
-      totalAmount: pricing.total,
-      currency: "ZAR",
-      leadSource: "Website Self-Quote",
-      geo: coordinates,
-      mapImageUrl: buildMapImageUrl(coordinates, parsed.areas),
-      pdfAccessToken,
-      quoteNumber,
-      reference: quoteNumber,
-      dueDate,
-      attribution: parsed.utm,
-      metaEventId: parsed.meta?.eventId,
-    });
+    let quote;
+    try {
+      quote = await Quote.create({
+        customerId: customer._id,
+        propertyId: property._id,
+        areas: parsed.areas,
+        notes: parsed.notes,
+        status: "Pending",
+        totalAmount: pricing.total,
+        currency: "ZAR",
+        leadSource: "Website Self-Quote",
+        geo: coordinates,
+        mapImageUrl: buildMapImageUrl(coordinates, parsed.areas),
+        pdfAccessToken,
+        quoteNumber,
+        reference: quoteNumber,
+        dueDate,
+        attribution: parsed.utm,
+        metaEventId: parsed.meta?.eventId,
+        submissionId,
+      });
+    } catch (error: any) {
+      if (error?.code === 11000 && submissionId) {
+        const existingQuote = await Quote.findOne({ submissionId });
+        if (existingQuote) {
+          return createQuoteResponse(existingQuote, pricing);
+        }
+      }
+      throw error;
+    }
 
     if (parsed.meta?.consent) {
       await sendMetaServerEvent({
@@ -182,17 +222,7 @@ export async function POST(request: Request) {
       property,
     });
 
-    return NextResponse.json({
-      quoteId: quote._id.toString(),
-      quoteNumber,
-      pdfAccessToken,
-      totalAmount: pricing.total,
-      lineItems: pricing.items,
-      minimumFee: pricing.minimumFee,
-      vatIncluded: pricing.vatIncluded,
-      vatRate: pricing.vatRate,
-      vatAmount: pricing.vatAmount,
-    });
+    return createQuoteResponse(quote, pricing);
   } catch (error: any) {
     console.error(error);
     // Surface Zod validation errors as readable field messages

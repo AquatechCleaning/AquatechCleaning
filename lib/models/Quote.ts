@@ -40,6 +40,7 @@ export interface IQuote extends Document {
   dueDate?: Date;
   attribution?: Record<string, string>;
   metaEventId?: string;
+  submissionId?: string;
 }
 
 const QuoteSchema = new Schema<IQuote>(
@@ -97,6 +98,7 @@ const QuoteSchema = new Schema<IQuote>(
     dueDate: { type: Date },
     attribution: { type: Schema.Types.Mixed },
     metaEventId: { type: String },
+    submissionId: { type: String, unique: true, sparse: true },
   },
   { timestamps: true }
 );

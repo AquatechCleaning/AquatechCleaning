@@ -49,6 +49,7 @@ export const quoteSchema = z.object({
   meta: z
     .object({
       eventId: z.string().optional(),
+      requestId: z.string().optional(),
       fbp: z.string().optional(),
       fbc: z.string().optional(),
       sourceUrl: z.string().optional(),

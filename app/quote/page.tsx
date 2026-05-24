@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GoogleMap, useJsApiLoader, DrawingManager, Autocomplete, OverlayView, Polygon, Polyline } from "@react-google-maps/api";
-import { formatCurrency } from "@/lib/format";
 import { captureAttribution, createMetaEventId, getMetaAttribution, hasAdvertisingConsent, trackMetaEvent } from "@/lib/metaPixel";
 
 type AreaType = "roof" | "gutters" | "driveway" | "tiles" | "wall" | "house_wash" | "miscellaneous" | "windows" | "solar_panels";
@@ -60,6 +59,10 @@ const createClientId = () => {
   return `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 };
 
+const resetQuoteViewport = () => {
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+};
+
 export default function QuotePage() {
   const [address, setAddress] = useState("");
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
@@ -69,12 +72,8 @@ export default function QuotePage() {
   const [form, setForm] = useState({ name: "", surname: "", email: "", phone: "", propertyType: "residential" as "residential" | "commercial", companyName: "", companyRegNumber: "", vatNumber: "", notes: "" });
   const [quoteResult, setQuoteResult] = useState<QuoteResult>();
   const [isMeasuring, setIsMeasuring] = useState(false);
-  const [quoteStatus, setQuoteStatus] = useState<"idle" | "success" | "error">("idle");
+  const [quoteStatus, setQuoteStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [quoteMessage, setQuoteMessage] = useState("");
-  const [quoteActionStatus, setQuoteActionStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [quoteActionMessage, setQuoteActionMessage] = useState("");
-  const [quoteActionComplete, setQuoteActionComplete] = useState(false);
-  const [declineReason, setDeclineReason] = useState("");
   const [showTutorial, setShowTutorial] = useState(true);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [mobilePolygonPoints, setMobilePolygonPoints] = useState<ShapePoint[]>([]);
@@ -110,6 +109,8 @@ export default function QuotePage() {
   const mapRef = useRef<google.maps.Map | null>(null);
   const drawnShapesRef = useRef<google.maps.MVCObject[]>([]);
   const measurementStartedRef = useRef(false);
+  const quoteSubmitInFlightRef = useRef(false);
+  const quoteSubmissionIdRef = useRef(createClientId());
   const surfacePickerRef = useRef<HTMLDivElement | null>(null);
   const detailsRef = useRef<HTMLDivElement | null>(null);
   const mobileCloseInProgressRef = useRef(false);
@@ -121,10 +122,10 @@ export default function QuotePage() {
   }, []);
 
   useEffect(() => {
-    if (quoteStatus === "success" && quoteResult) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    if (quoteStatus === "loading" || quoteStatus === "success") {
+      resetQuoteViewport();
     }
-  }, [quoteStatus, quoteResult]);
+  }, [quoteStatus]);
 
   useEffect(() => {
     const syncViewport = () => {
@@ -302,6 +303,7 @@ export default function QuotePage() {
   };
 
   const submitQuote = async () => {
+    if (quoteSubmitInFlightRef.current) return;
     if (areas.length === 0) { setQuoteStatus("error"); setQuoteMessage("Please add at least one area."); return; }
     if (!form.name || form.name.trim().length < 2) { setQuoteStatus("error"); setQuoteMessage("Please enter your first name (at least 2 characters)."); return; }
     if (!form.surname || form.surname.trim().length < 2) { setQuoteStatus("error"); setQuoteMessage("Please enter your last name (at least 2 characters)."); return; }
@@ -309,7 +311,9 @@ export default function QuotePage() {
     if (!form.phone || form.phone.trim().length < 6) { setQuoteStatus("error"); setQuoteMessage("Please enter a valid phone number."); return; }
     if (form.propertyType === "commercial" && !form.companyName?.trim()) { setQuoteStatus("error"); setQuoteMessage("Please enter your company name for commercial quotes."); return; }
 
-    setQuoteStatus("idle");
+    quoteSubmitInFlightRef.current = true;
+    resetQuoteViewport();
+    setQuoteStatus("loading");
     setQuoteMessage("");
 
     const quoteGeneratedEventId = createMetaEventId("QuoteGenerated");
@@ -325,6 +329,7 @@ export default function QuotePage() {
       areas: areas.map((a) => ({ type: a.type, sqm: a.sqm, details: a.details, path: a.path, shape: a.shape })),
       meta: {
         eventId: quoteGeneratedEventId,
+        requestId: quoteSubmissionIdRef.current,
         fbp: attribution.fbp,
         fbc: attribution.fbc,
         sourceUrl: attribution.sourceUrl,
@@ -341,6 +346,7 @@ export default function QuotePage() {
         throw new Error(detail);
       }
       setQuoteResult(data);
+      resetQuoteViewport();
       setQuoteStatus("success");
       setQuoteMessage(`Quote #${data.quoteNumber ?? data.quoteId} submitted!`);
       trackMetaEvent("QuoteGenerated", {
@@ -353,6 +359,7 @@ export default function QuotePage() {
         },
       });
     } catch (e: any) {
+      quoteSubmitInFlightRef.current = false;
       setQuoteStatus("error");
       setQuoteMessage(e.message ?? "Something went wrong. Please try again.");
     }
@@ -365,6 +372,7 @@ export default function QuotePage() {
     return "polygon";
   }, [activeType]);
   const isMobilePolygonMode = isMobileViewport && isMeasuring && drawingMode === "polygon";
+  const isQuoteSubmitting = quoteStatus === "loading";
 
   useEffect(() => {
     if (!isMeasuring || drawingMode !== "polygon" || !isMobileViewport) {
@@ -398,70 +406,22 @@ export default function QuotePage() {
     marginBottom: "4px",
   };
 
-  const handleQuoteAction = async (action: "accept" | "decline" | "callback") => {
-    if (!quoteResult?.quoteId) return;
-
-    setQuoteActionStatus("loading");
-    setQuoteActionMessage("");
-
-    const endpoint =
-      action === "accept"
-        ? "/api/quotes/accept"
-        : action === "decline"
-          ? "/api/quotes/decline"
-          : "/api/quotes/callback";
-
-    try {
-      const quoteAcceptedEventId = createMetaEventId("QuoteAccepted");
-      const attribution = getMetaAttribution();
-      const advertisingConsent = hasAdvertisingConsent();
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          quoteId: quoteResult.quoteId,
-          ...(action === "accept"
-            ? {
-                meta: {
-                  eventId: quoteAcceptedEventId,
-                  fbp: attribution.fbp,
-                  fbc: attribution.fbc,
-                  sourceUrl: attribution.sourceUrl,
-                  consent: advertisingConsent,
-                },
-              }
-            : {}),
-          ...(action === "decline" ? { reason: declineReason.trim() || undefined } : {}),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unable to update quote.");
-
-      setQuoteActionComplete(true);
-      setQuoteActionStatus("success");
-      setQuoteActionMessage(
-        action === "accept"
-          ? "Quote accepted. We will contact you to confirm scheduling."
-          : action === "decline"
-            ? "Quote declined. Thank you for letting us know."
-            : "Callback requested. We will contact you shortly."
-      );
-      if (action === "accept") {
-        trackMetaEvent("QuoteAccepted", {
-          eventId: quoteAcceptedEventId,
-          customData: {
-            currency: "ZAR",
-            value: quoteResult.totalAmount,
-            quote_id: quoteResult.quoteId,
-            quote_number: quoteResult.quoteNumber,
-          },
-        });
-      }
-    } catch (e: any) {
-      setQuoteActionStatus("error");
-      setQuoteActionMessage(e.message ?? "Unable to update quote. Please try again.");
-    }
-  };
+  if (quoteStatus === "loading") {
+    return (
+      <div className="quote-result-shell" style={{ background: "var(--bg)", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="ui-card reveal-up quote-result-card">
+          <span className="ui-page-spinner" aria-hidden="true" />
+          <p style={labelStyle}>Generating quote</p>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 800, color: "var(--navy)", marginBottom: "10px" }}>
+            Please hold on
+          </h1>
+          <p style={{ color: "var(--text-muted)", fontSize: "14px", lineHeight: 1.7 }}>
+            We are calculating your quote and sending the details to our team.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (quoteStatus === "success" && quoteResult) {
     return (
@@ -469,78 +429,14 @@ export default function QuotePage() {
         <div className="ui-card reveal-up quote-result-card">
           <div style={{ fontSize: "56px", marginBottom: "20px" }}>✅</div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 800, color: "var(--navy)", marginBottom: "10px" }}>
-            Quote Ready
+            Your quote has been generated
           </h1>
           <p style={{ color: "var(--text-muted)", fontSize: "14px", lineHeight: 1.7, marginBottom: "28px" }}>
-            Review quote #{quoteResult.quoteNumber ?? quoteResult.quoteId}, then accept, decline, request a call back, or download a copy.
+            Your quote has been sent to the team who will be in touch within the next hour.
           </p>
-          <div style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "12px", padding: "20px", marginBottom: "28px" }}>
-            <div className="quote-result-total-row">
-              <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>Estimated Total</span>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 800, color: "var(--primary)" }}>
-                {formatCurrency(quoteResult.totalAmount)}
-              </span>
-            </div>
-            {quoteResult.vatIncluded && (
-              <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px", textAlign: "right" }}>
-                Incl. VAT ({((quoteResult.vatRate ?? 0.15) * 100).toFixed(0)}%)
-              </p>
-            )}
-          </div>
-          <div className="rsp-grid-actions" style={{ marginBottom: "10px" }}>
-            <button
-              className="ui-btn ui-btn-primary"
-              onClick={() => handleQuoteAction("accept")}
-              disabled={quoteActionStatus === "loading" || quoteActionComplete}
-            >
-              Accept Quote
-            </button>
-            <button
-              className="ui-btn ui-btn-ghost"
-              onClick={() => handleQuoteAction("decline")}
-              disabled={quoteActionStatus === "loading" || quoteActionComplete}
-            >
-              Decline Quote
-            </button>
-          </div>
-          <div className="rsp-grid-actions" style={{ marginBottom: "14px" }}>
-            <button
-              className="ui-btn ui-btn-secondary"
-              onClick={() => handleQuoteAction("callback")}
-              disabled={quoteActionStatus === "loading" || quoteActionComplete}
-            >
-              Request Call Back
-            </button>
-            <a
-              href={`/api/quotes/pdf/${quoteResult.quoteId}${quoteResult.pdfAccessToken ? `?token=${quoteResult.pdfAccessToken}` : ""}`}
-              className="ui-btn ui-btn-ghost"
-              style={{ display: "block", textDecoration: "none" }}
-            >
-              Download Quote
-            </a>
-          </div>
-          <textarea
-            style={{ ...inputStyle, resize: "vertical", marginBottom: "12px" }}
-            rows={2}
-            placeholder="Optional reason if declining"
-            value={declineReason}
-            onChange={(e) => setDeclineReason(e.target.value)}
-          />
-          {quoteActionMessage && (
-            <div
-              style={{
-                background: quoteActionStatus === "error" ? "#FEE2E2" : "#ECFDF5",
-                border: `1px solid ${quoteActionStatus === "error" ? "#FECACA" : "#A7F3D0"}`,
-                borderRadius: "8px",
-                color: quoteActionStatus === "error" ? "#991b1b" : "#065F46",
-                fontSize: "12px",
-                marginBottom: "12px",
-                padding: "10px 14px",
-              }}
-            >
-              {quoteActionMessage}
-            </div>
-          )}
+          <p style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text-muted)", fontSize: "12px", marginBottom: "18px", padding: "12px 14px" }}>
+            Reference: {quoteResult.quoteNumber ?? quoteResult.quoteId}
+          </p>
           <a href="/quote" className="ui-btn ui-btn-ghost" style={{ display: "block" }}>Submit Another Quote</a>
         </div>
       </div>
@@ -1048,9 +944,17 @@ export default function QuotePage() {
                 className="ui-btn ui-btn-primary"
                 style={{ width: "100%", padding: "14px", fontSize: "15px" }}
                 onClick={submitQuote}
-                disabled={areas.length === 0}
+                disabled={areas.length === 0 || isQuoteSubmitting}
+                aria-busy={isQuoteSubmitting}
               >
-                Submit Quote Request →
+                {isQuoteSubmitting ? (
+                  <>
+                    <span className="ui-btn-spinner" aria-hidden="true" />
+                    Generating Quote...
+                  </>
+                ) : (
+                  "Submit Quote Request →"
+                )}
               </button>
             </div>
           </div>
